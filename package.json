@@ -1,0 +1,28 @@
+{
+  "name": "snabbdom-timeline",
+  "version": "0.1.0",
+  "description": "an interactive timeline component implemented in snabbdom",
+  "main": "timeline.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mreinstein/snabbdom-timeline.git"
+  },
+  "keywords": [
+    "timeline",
+    "vdom",
+    "virtual",
+    "dom",
+    "snabbdom",
+    "ui"
+  ],
+  "author": "Mike Reinstein",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mreinstein/snabbdom-timeline/issues"
+  },
+  "homepage": "https://github.com/mreinstein/snabbdom-timeline#readme"
+}
