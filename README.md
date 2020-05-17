@@ -5,10 +5,19 @@ an interactive timeline component implemented in snabbdom
 ![alt text](scr1.png "screenshot")
 
 
+## features
+* can stack multiple graphs
+* single time or ranged time selectors
+* data oriented, functional design
+* tiny! (< 300 lines of code)
+* renders with SVG
+
+
 ## example usage
 
 ```javascript
-import timelineComponent from 'https://cdn.jsdelivr.net/gh/mreinstein/snabbdom-timeline/timeline.js';
+import html     from 'https://cdn.jsdelivr.net/npm/snabby@1/snabby.js'
+import timeline from 'https://cdn.jsdelivr.net/gh/mreinstein/snabbdom-timeline/timeline.js'
 
 
 // contains all data needed to render a timeline component
@@ -42,29 +51,29 @@ const model = {
             data: [ ]
         }
     ]
-};
+}
 
 
-document.body.appendChild(model.container);
+document.body.appendChild(model.container)
 
 
 function update () {
     const oldVnode = model.container
-    const newVnode = timelineComponent(model, update)
+    const newVnode = timeline(model, update)
     model.container = html.update(oldVnode, newVnode)
 }
 
 
-// pump fake test data into the graph
+// pump test data into the graph
 setInterval(function () {
     const value = model.graphs[0].yRange.start + Math.round(Math.random() * (model.graphs[0].yRange.end - model.graphs[0].yRange.start))
     model.graphs[0].data.push({
         t: performance.now() / 1000,
         value
-    });
+    })
 
-    update();
-}, 2000);
+    update()
+}, 2000)
 
 update()
 
