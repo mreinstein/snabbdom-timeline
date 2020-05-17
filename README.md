@@ -53,6 +53,17 @@ function update () {
 }
 
 
+// pump fake test data into the graph
+setInterval(function () {
+    const value = model.graphs[0].yRange.start + Math.round(Math.random() * (model.graphs[0].yRange.end - model.graphs[0].yRange.start))
+    model.graphs[0].data.push({
+        t: performance.now() / 1000,
+        value
+    });
+
+    update();
+}, 2000);
+
 update()
 
 ```
