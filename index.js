@@ -1,5 +1,5 @@
 import findPosOnScale from './find-position-on-scale.js'
-import html           from 'https://cdn.jsdelivr.net/npm/snabby@1/snabby.js'
+import html           from 'snabby'
 import lerp           from './lerp.js'
 
 

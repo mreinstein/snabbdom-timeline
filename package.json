@@ -1,8 +1,8 @@
 {
   "name": "snabbdom-timeline",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "an interactive timeline component implemented in snabbdom",
-  "main": "timeline.js",
+  "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -24,5 +24,8 @@
   "bugs": {
     "url": "https://github.com/mreinstein/snabbdom-timeline/issues"
   },
-  "homepage": "https://github.com/mreinstein/snabbdom-timeline#readme"
+  "homepage": "https://github.com/mreinstein/snabbdom-timeline#readme",
+  "dependencies": {
+    "snabby": "^1.1.1"
+  }
 }
