@@ -71,23 +71,27 @@ function graphComponent (model, graph, update) {
     }
 
     return html`
-        <svg xmlns="http://www.w3.org/2000/svg" class="graph"
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="graph"
              aria-labelledby="title"
              role="img"
              viewBox="0 0 ${model.width} ${graph.height}" 
-             style="height: ${graph.height}px"
+             style="height: ${graph.height}px; width: 100%; background-color: white; font-size: 10px; text-anchor: middle; -moz-user-select: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; -khtml-user-drag: none; -moz-user-drag: none; -o-user-drag: none; user-drag: none;"
              @on:mouseup=${_stopDragging}
              @on:mouseleave=${_stopDragging}
              @on:mousemove=${_mouseMove}>
             <title id="title">${graph.title}</title>
 
-            <g class="grid y-grid" id="yGrid">
+            <g class="grid y-grid" id="yGrid"
+               style="stroke: #888; stroke-dasharray: 0; stroke-width: 1;">
                 <line x1="${m.leftMargin}" x2="${m.leftMargin+m.graphWidth}" y1="${m.graphHeight}" y2="${m.graphHeight}" />
                 ${tickMarksComponent(model, graph, update)}
                 ${tickLabelsComponent(model, graph, update)}
             </g>
 
-            <g class="data" data-setname="Our first data set">
+            <g class="data"
+               data-setname="Our first data set"
+               style="stroke-width: 1;">
                 ${tp.map((point) => {
                     const x = pixelsPerSecond * (point.t - graph.timeRange.start)
                     const yLength = graph.yRange.end - graph.yRange.start
@@ -248,7 +252,8 @@ function timeValueSelectionComponent (model, graph, update) {
 export default function timelineComponent (model, update) {
     model.width = model.container.offsetWidth || model.container.elm.offsetWidth
     return html`
-        <div class="graph-stack">
+        <div class="graph-stack"
+             style="width: 100%; display: grid; grid-template-columns: 1fr; border: 1px solid #adafaf;">
             ${model.graphs.map((g) => graphComponent(model, g, update))}
         </div>`
 }
