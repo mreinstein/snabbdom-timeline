@@ -2,7 +2,7 @@
 
 an interactive timeline component implemented in snabbdom
 
-![alt text](scr1.png "screenshot")
+![alt text](scr2.png "screenshot")
 
 
 ## features
