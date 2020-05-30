@@ -1,3 +1,5 @@
+// given a value between a start and an end point, figure out how far
+// along we are from 0..1
 export default function findPosOnScale (start, end, value) {
     if (value === Infinity)
         return 1

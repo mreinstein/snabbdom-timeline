@@ -1,3 +1,4 @@
+import clamp          from 'https://cdn.jsdelivr.net/gh/mreinstein/math-gap/src/clamp.js'
 import findPosOnScale from './find-position-on-scale.js'
 import html           from 'https://cdn.jsdelivr.net/npm/snabby@1/snabby.js'
 import lerp           from 'https://cdn.jsdelivr.net/gh/mreinstein/math-gap/src/lerp.js'
@@ -50,15 +51,13 @@ function graphComponent (model, graph, update) {
             return
 
         if (graph.selection.dragging === 'start') {
-            const pos = Math.max(0, (ev.offsetX - m.leftMargin) / m.graphWidth)
+            const pos = clamp((ev.offsetX - m.leftMargin) / m.graphWidth, 0, 1)
             graph.selection.start = lerp(graph.timeRange.start, graph.timeRange.end, pos)
         } else if (graph.selection.dragging === 'end') {
-            const pos = Math.min(1, (ev.offsetX - m.leftMargin) / m.graphWidth)
+            const pos = clamp((ev.offsetX - m.leftMargin) / m.graphWidth, 0, 1)
             graph.selection.end = (pos === 1) ? Infinity : lerp(graph.timeRange.start, graph.timeRange.end, pos)
         } else {
-            let pos = (ev.offsetX - m.leftMargin) / m.graphWidth
-            if (pos < 0)
-                pos = 0
+            const pos = clamp((ev.offsetX - m.leftMargin) / m.graphWidth, 0, 1)
             graph.selection.time = lerp(graph.timeRange.start, graph.timeRange.end, pos)
         }
 
@@ -69,6 +68,8 @@ function graphComponent (model, graph, update) {
         graph.selection.dragging = undefined
         update()
     }
+
+    const dotWidth = 4
 
     return html`
         <svg xmlns="http://www.w3.org/2000/svg"
@@ -90,20 +91,21 @@ function graphComponent (model, graph, update) {
             </g>
 
             <g class="data"
-               data-setname="Our first data set"
                style="stroke-width: 1;">
                 ${tp.map((point) => {
-                    const x = pixelsPerSecond * (point.t - graph.timeRange.start)
-                    const yLength = graph.yRange.end - graph.yRange.start
-                    const y = (1 - (point.value / yLength)) * (m.graphHeight - 4) // 2 is half the height of the dot
+                    const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, point.t)
+                    const x = startX * (m.graphWidth - dotWidth) + m.leftMargin
 
-                    return html`<rect x="${m.leftMargin + x}" y="${y}" style="fill: ${graph.dataColor};" data-value="${point.value}" width="4" height="4" />`                    
+                    const yLength = graph.yRange.end - graph.yRange.start
+                    const y = (1 - (point.value / yLength)) * (m.graphHeight - dotWidth)
+
+                    return html`<rect x="${x}" y="${y}" style="fill: ${graph.dataColor};" data-value="${point.value}" width="${dotWidth}" height="${dotWidth}" />`                    
                 })}
             </g>
 
             ${timeSelectionComponent(model, graph, update)}
 
-            <text x="${model.width - 10}" y="18" style="fill: rgba(0, 0, 0, 0.7); text-anchor: end; pointer-events: none;">${graph.label}</text>
+            <text x="${m.graphWidth + m.leftMargin - dotWidth}" y="12" style="fill: rgba(0, 0, 0, 0.7); text-anchor: end; pointer-events: none;">${graph.label}</text>
             ${renderLabelComponent(model, graph, update)}
         </svg>`
 }
