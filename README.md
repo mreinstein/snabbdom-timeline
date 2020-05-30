@@ -2,14 +2,14 @@
 
 an interactive timeline component implemented in snabbdom
 
-![alt text](scr3.png "screenshot")
+![alt text](scr4.png "screenshot")
 
 
 ## features
 * can stack multiple graphs
 * single time or ranged time selectors
 * data oriented, functional design
-* tiny! (< 300 lines of code)
+* tiny! (~ 300 lines of code)
 * renders with SVG
 
 
@@ -38,17 +38,36 @@ const model = {
                 start: 0,
                 end: 100
             },
+
+            // optional: render a selection control
             selection: {
                 type: 'range',
-                start: 0,         // seconds | 0
-                end: Infinity,    // seconds | Infinity
+                start: 0,       // seconds | 0
+                end: Infinity,  // seconds | Infinity
                 dragging: false
             },
-            height: 40,           // pixels
-            dataColor: 'dodgerblue',
+
+            height: 40,              // pixels
+            dataColor: 'dodgerblue', // color of data points on the graph
             renderTicks: false,
             renderValueLabel: false,
-            data: [ ]
+
+            // the data points to render
+            data: [ ],
+
+            // optional: settings for grid background lines
+            gridLines: {
+                vertical: {
+                    majorColor: '#dedede',
+                    minorColor: '#f3f3f3',
+                    ticksPerMinor: 2.5,
+                    ticksPerMajor: 10
+                },
+                horizontal: {
+                    color: '#eeeeee',
+                    lineCount: 2
+                }
+            }
         }
     ]
 }

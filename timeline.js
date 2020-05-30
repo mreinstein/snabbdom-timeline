@@ -35,6 +35,47 @@ function getGraphMetrics (model, graph) {
 }
 
 
+function gridLines (model, graph, update) {
+    if (!graph.gridLines)
+        return html``
+
+    const m = getGraphMetrics(model, graph)
+  
+    const gridLines = [ ]
+
+    if (graph.gridLines.vertical) {
+        const pixelsPerTick = 6
+        const pixelsPerMinorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMinor
+        for (let i=0; i < m.graphWidth; i += pixelsPerMinorLine) {
+            const x = m.leftMargin + i
+            gridLines.push({ x1: x, x2: x, y1: 0, y2: m.graphHeight, stroke: graph.gridLines.vertical.minorColor })
+        }
+
+        const pixelsPerMajorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMajor
+        for (let i=0; i < m.graphWidth; i += pixelsPerMajorLine) {
+            const x = m.leftMargin + i
+            gridLines.push({ x1: x, x2: x, y1: 0, y2: m.graphHeight, stroke: graph.gridLines.vertical.majorColor })
+        }
+    }
+
+    if (graph.gridLines.horizontal) {
+        const distanceBetweenLines = m.graphHeight / (graph.gridLines.horizontal.lineCount + 1)
+        for (let i=distanceBetweenLines; i < m.graphHeight; i += distanceBetweenLines) {
+            const y = i
+            gridLines.push({ x1: m.leftMargin, x2: m.leftMargin + m.graphWidth, y1: y, y2: y, stroke: graph.gridLines.horizontal.color, dashArray: '4 2' })
+        }
+    }
+
+    const strokeWidth = 1 / (window.devicePixelRatio || 1)
+
+    return gridLines.map((tick) => {
+        return html`<line x1="${tick.x1}" x2="${tick.x2}" y1="${tick.y1}" y2="${tick.y2}"
+                          style="stroke: ${tick.stroke}; stroke-width: ${strokeWidth}"
+                          @attrs:stroke-dasharray=${tick.dashArray}/>`
+    })
+}
+
+
 function graphComponent (model, graph, update) {
 
     const tp = getTimePeriodData(graph)
@@ -85,6 +126,7 @@ function graphComponent (model, graph, update) {
 
             <g class="grid y-grid" id="yGrid"
                style="stroke: #888; stroke-dasharray: 0; stroke-width: 1;">
+                ${gridLines(model, graph, update)}
                 <line x1="${m.leftMargin}" x2="${m.leftMargin+m.graphWidth}" y1="${m.graphHeight}" y2="${m.graphHeight}" />
                 ${tickMarksComponent(model, graph, update)}
                 ${tickLabelsComponent(model, graph, update)}
