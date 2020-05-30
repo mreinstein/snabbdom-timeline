@@ -1,0 +1,182 @@
+<!doctype html>
+<html>
+<head>
+    <title>Timeline Component Prototype</title>
+    <meta name=theme-color content=#303F9F><meta name=viewport content="width=device-width,minimum-scale=1">
+    <style>
+        body {
+          font-family: monospace;
+          background-color: whitesmoke;
+          padding: 10px;
+        }
+
+        div.graph-stack {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr;
+            border: 1px solid #ebecec;
+        }
+
+        .graph {
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            font-size: 10px;
+            text-anchor: middle;
+        }
+
+        .graph .grid {
+          stroke: #888;
+          stroke-dasharray: 0;
+          stroke-width: 1;
+        }
+
+        .labels {
+          font-size: 13px;
+        }
+
+        .label-title {
+          font-weight: bold;
+          text-transform: uppercase;
+          fill: black;
+        }
+
+        .data {
+          fill: dodgerblue;
+          stroke-width: 1;
+        }
+
+        svg.graph {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-user-drag: none;
+            -khtml-user-drag: none;
+            -moz-user-drag: none;
+            -o-user-drag: none;
+            user-drag: none;
+        }
+
+    </style>
+</head>
+<body>
+
+<p>
+In this example, the top graph shows all data over time. The bottom graph shows the same data set, but only
+within the selected time range of the top graph.
+</p>
+
+<script type="module">
+
+import html      from 'https://cdn.jsdelivr.net/npm/snabby@1/snabby.js'
+import randomInt from 'https://cdn.jsdelivr.net/gh/mreinstein/random-gap/int.js'
+import timeline  from './timeline.js'
+
+
+
+// contains all data needed to render a timeline component
+const model = {
+    container: document.createElement('div'),
+    width: 0,
+    graphs: [
+        {
+            title: 'test title',
+            label: 'all time',
+            type: 'scatterPlot',
+            timeRange: {
+                start: 0,  // seconds
+                end: 0     // seconds
+            },
+            yRange: {
+                start: 0,
+                end: 100
+            },
+            selection: {
+                type: 'range',
+                start: 0,         // seconds | 0
+                end: Infinity,    // seconds | Infinity
+                dragging: false
+            },
+            height: 140,           // pixels
+            dataColor: 'dodgerblue',
+            renderTicks: false,
+            renderValueLabel: false,
+            data: [ ]
+        },
+
+        {
+            title: 'test title',
+            label: 'selected time',
+            type: 'scatterPlot',
+            timeRange: {
+                start: 0,  // seconds
+                end: 0     // seconds
+            },
+            yRange: {
+                start: 0,
+                end: 100
+            },
+            selection: {
+                type: 'value',
+                time: 0,
+                dragging: false
+            },
+            height: 140,           // pixels
+            dataColor: 'dodgerblue',
+            renderTicks: true,
+            renderValueLabel: true,
+            data: [ ]
+        }
+
+    ]
+}
+
+window.m = model
+
+
+document.body.appendChild(model.container)
+
+
+function timelineComponent (model, update) {
+    // link the lower graph to show data within the selected range from the upper graph
+    model.graphs[1].timeRange.start = 
+        (model.graphs[0].selection.start === 0) ? model.graphs[0].timeRange.start : model.graphs[0].selection.start
+
+    model.graphs[1].timeRange.end =
+        (model.graphs[0].selection.end === Infinity) ? model.graphs[0].timeRange.end : model.graphs[0].selection.end
+        
+    return timeline(model, update)
+}
+
+
+function update () {
+    const oldVnode = model.container
+    const newVnode = timelineComponent(model, update)
+    model.container = html.update(oldVnode, newVnode)
+}
+
+
+// pump test data into the graphs every 2 seconds
+setInterval(function () {
+
+    // generate the data point, insert it into both graphs
+    const t = performance.now() / 1000
+    const value = randomInt(model.graphs[0].yRange.start, model.graphs[0].yRange.end)
+
+    model.graphs[0].data.push({ t, value })
+    model.graphs[1].data.push({ t, value })
+
+
+    if (model.graphs[0].data.length > 0)
+        model.graphs[0].timeRange.end = model.graphs[0].data[model.graphs[0].data.length-1].t
+
+    update()
+}, 2000)
+
+
+update()
+
+</script>
+
+</body>
+</html>

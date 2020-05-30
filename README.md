@@ -78,3 +78,5 @@ setInterval(function () {
 update()
 
 ```
+
+You can also open `example.html` in a browser to see a more complicated example with 2 graphs linked together.
