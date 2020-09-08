@@ -1,0 +1,32 @@
+{
+  "name": "snabbdom-timeline",
+  "version": "0.0.1",
+  "description": "an interactive timeline component implemented in snabbdom",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c rollup.config.js -o index.js timeline.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mreinstein/snabbdom-timeline.git"
+  },
+  "keywords": [
+    "snabbdom",
+    "timeline"
+  ],
+  "author": "Mike Reinstein",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mreinstein/snabbdom-timeline/issues"
+  },
+  "homepage": "https://github.com/mreinstein/snabbdom-timeline#readme",
+  "devDependencies": {
+    "rollup": "^2.26.11",
+    "rollup-plugin-commonjs": "^10.1.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-url-resolve": "^0.1.1"
+  },
+  "dependencies": {}
+}

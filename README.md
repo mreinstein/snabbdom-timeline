@@ -15,6 +15,8 @@ an interactive timeline component implemented in snabbdom
 
 ## example usage
 
+requires node >= v12.17
+
 ```javascript
 import html     from 'https://cdn.jsdelivr.net/npm/snabby@1/snabby.js'
 import timeline from 'https://cdn.jsdelivr.net/gh/mreinstein/snabbdom-timeline/timeline.js'
