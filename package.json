@@ -1,6 +1,6 @@
 {
   "name": "snabbdom-timeline",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "an interactive timeline component implemented in snabbdom",
   "type": "module",
   "main": "index.js",
