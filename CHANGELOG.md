@@ -1,5 +1,10 @@
 # changelog
 
+## 0.3.1
+
+* tweak readme
+
+
 ## 0.3.0
 
 * update to snabby v2
