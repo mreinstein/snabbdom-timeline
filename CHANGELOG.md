@@ -4,6 +4,7 @@
 
 * update to snabby v2
 * require node v12.17+
+* enforce build before npm publish
 
 
 ## 0.2.0
