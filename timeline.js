@@ -1,6 +1,6 @@
 import clamp          from 'https://cdn.jsdelivr.net/gh/mreinstein/math-gap/src/clamp.js'
 import findPosOnScale from './find-position-on-scale.js'
-import html           from 'https://cdn.jsdelivr.net/npm/snabby@1/snabby.js'
+import html           from 'https://cdn.jsdelivr.net/npm/snabby@1.2/snabby.js'
 import lerp           from 'https://cdn.jsdelivr.net/gh/mreinstein/math-gap/src/lerp.js'
 
 
