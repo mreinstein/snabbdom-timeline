@@ -16,6 +16,11 @@
     "snabbdom",
     "timeline"
   ],
+  "files": [
+    "find-position-on-scale.js",
+    "index.js",
+    "timeline.js"
+  ],
   "author": "Mike Reinstein",
   "license": "MIT",
   "bugs": {
