@@ -13,14 +13,25 @@ an interactive timeline component implemented in snabbdom
 * renders with SVG
 
 
-## example usage
+## usage
 
-requires node >= v12.17
+requires node >= v12.17 or a browser that supports the es module format.
 
+
+via `npm`:
+```javascript
+import html     from 'snabby'
+import timeline from 'snabbdom-timeline'
+```
+
+via a pure es module (browser or `deno`):
 ```javascript
 import html     from 'https://cdn.jsdelivr.net/npm/snabby@1/snabby.js'
 import timeline from 'https://cdn.jsdelivr.net/gh/mreinstein/snabbdom-timeline/timeline.js'
+```
 
+
+```javascript
 
 // contains all data needed to render a timeline component
 
