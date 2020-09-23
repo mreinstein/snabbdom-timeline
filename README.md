@@ -26,7 +26,7 @@ import timeline from 'snabbdom-timeline'
 
 via a pure es module (browser or `deno`):
 ```javascript
-import html     from 'https://cdn.jsdelivr.net/npm/snabby@1/snabby.js'
+import html     from 'https://cdn.jsdelivr.net/npm/snabby@2/snabby.js'
 import timeline from 'https://cdn.jsdelivr.net/gh/mreinstein/snabbdom-timeline/timeline.js'
 ```
 
