@@ -1,5 +1,11 @@
 # changelog
 
+## 0.3.0
+
+* update to snabby v2
+* require node v12.17+
+
+
 ## 0.2.0
 
 * reduce npm package size by specifying `package.json` `file` field
