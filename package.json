@@ -17,6 +17,7 @@
     "timeline"
   ],
   "files": [
+    "CHANGELOG.md",
     "find-position-on-scale.js",
     "index.js",
     "timeline.js"
