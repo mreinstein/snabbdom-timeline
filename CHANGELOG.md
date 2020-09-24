@@ -1,5 +1,10 @@
 # changelog
 
+## 0.4.0
+
+* add line plot graph type
+
+
 ## 0.3.1
 
 * tweak readme
