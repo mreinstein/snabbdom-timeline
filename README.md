@@ -42,7 +42,7 @@ const model = {
         {
             title: 'test title',
             label: 'title',
-            type: 'scatterPlot',
+            type: 'scatterPlot',  // scatterPlot | linePlot
             timeRange: {
                 start: 0,  // seconds
                 end: 0     // seconds
@@ -110,5 +110,19 @@ setInterval(function () {
 update()
 
 ```
+
+## graph types
+
+There are 2 available graph types:
+
+### scatterPlot
+
+![alt text](plot-scatter.png "scatter plot graph")
+
+
+### linePlot
+
+![alt text](plot-line.png "line plot graph")
+ 
 
 You can also open `example.html` in a browser to see a more complicated example with 2 graphs linked together.

@@ -76,15 +76,55 @@ function gridLines (model, graph, update) {
 }
 
 
+function renderLinePlotGraph (model, graph, dotWidth) {
+    const tp = getTimePeriodData(graph)
+    const m = getGraphMetrics(model, graph)
+    
+    const lines = [ ]
+    let lastX, lastY
+
+    for (let i=0; i < tp.length; i++) {
+        const point = tp[i]
+
+        const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, point.t)
+        const x = startX * (m.graphWidth - dotWidth) + m.leftMargin
+
+        const yLength = graph.yRange.end - graph.yRange.start
+        const y = (1 - (point.value / yLength)) * (m.graphHeight - dotWidth)
+
+        if (i > 0)
+            lines.push(html`<line x1="${lastX}" y1="${lastY}" x2="${x}" y2="${y}" style="stroke: ${graph.dataColor}; stroke-width: 1;"/>`)
+    
+        lastX = x
+        lastY = y
+    }
+
+    return lines
+}
+
+
+function renderScatterPlotGraph (model, graph, dotWidth) {
+    const tp = getTimePeriodData(graph)
+    const m = getGraphMetrics(model, graph)
+    
+    return tp.map((point) => {
+        const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, point.t)
+        const x = startX * (m.graphWidth - dotWidth) + m.leftMargin
+
+        const yLength = graph.yRange.end - graph.yRange.start
+        const y = (1 - (point.value / yLength)) * (m.graphHeight - dotWidth)
+
+        return html`<rect x="${x}" y="${y}" style="fill: ${graph.dataColor};" data-value="${point.value}" width="${dotWidth}" height="${dotWidth}" />`                    
+    })
+}
+
+
 function graphComponent (model, graph, update) {
 
-    const tp = getTimePeriodData(graph)
-
-    const timePeriod = (graph.timeRange.end - graph.timeRange.start)
-
+    const dotWidth = 4
     const m = getGraphMetrics(model, graph)
-
-    const pixelsPerSecond = m.graphWidth / timePeriod
+    //const timePeriod = (graph.timeRange.end - graph.timeRange.start)
+    //const pixelsPerSecond = m.graphWidth / timePeriod
 
 
     const _mouseMove = function (ev) {
@@ -110,8 +150,6 @@ function graphComponent (model, graph, update) {
         update()
     }
 
-    const dotWidth = 4
-
     return html`
         <svg xmlns="http://www.w3.org/2000/svg"
              class="graph"
@@ -134,15 +172,7 @@ function graphComponent (model, graph, update) {
 
             <g class="data"
                style="stroke-width: 1;">
-                ${tp.map((point) => {
-                    const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, point.t)
-                    const x = startX * (m.graphWidth - dotWidth) + m.leftMargin
-
-                    const yLength = graph.yRange.end - graph.yRange.start
-                    const y = (1 - (point.value / yLength)) * (m.graphHeight - dotWidth)
-
-                    return html`<rect x="${x}" y="${y}" style="fill: ${graph.dataColor};" data-value="${point.value}" width="${dotWidth}" height="${dotWidth}" />`                    
-                })}
+               ${graph.type === 'scatterPlot' ? renderScatterPlotGraph(model, graph, dotWidth) : renderLinePlotGraph(model, graph, dotWidth)}
             </g>
 
             ${timeSelectionComponent(model, graph, update)}
