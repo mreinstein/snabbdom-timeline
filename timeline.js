@@ -2,6 +2,8 @@ import clamp          from 'https://cdn.jsdelivr.net/gh/mreinstein/math-gap/src/
 import findPosOnScale from './find-position-on-scale.js'
 import html           from 'https://cdn.jsdelivr.net/npm/snabby@2/snabby.js'
 import lerp           from 'https://cdn.jsdelivr.net/gh/mreinstein/math-gap/src/lerp.js'
+import throttle       from 'https://cdn.skypack.dev/lodash.throttle'
+import { h }          from 'https://cdn.jsdelivr.net/npm/snabbdom@2.1.0/build/package/h.js'; // helper function for creating vnodes
 
 
 function getTimePeriodData (graph) {
@@ -48,7 +50,8 @@ function verticalGridLinesMinor (model, graph, update) {
         const pixelsPerMinorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMinor
         for (let i=0; i < m.graphWidth; i += pixelsPerMinorLine) {
             const x = m.leftMargin + i
-            gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
+            //gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
+            gridLines.push(h('line', { attrs: { x1: x, x2: x, y1: 0, y2: m.graphHeight } }))
         }
     }
 
@@ -70,7 +73,8 @@ function verticalGridLinesMajor (model, graph, update) {
         const pixelsPerMajorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMajor
         for (let i=0; i < m.graphWidth; i += pixelsPerMajorLine) {
             const x = m.leftMargin + i
-            gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
+            //gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
+            gridLines.push(h('line', { attrs: { x1: x, x2: x, y1: 0, y2: m.graphHeight } }))
         }
     }
 
@@ -119,7 +123,7 @@ function renderLinePlotGraph (model, graph, dotWidth) {
         const y = (1 - (point.value / yLength)) * (m.graphHeight - dotWidth)
 
         if (i > 0)
-            lines.push(html`<line x1="${lastX}" y1="${lastY}" x2="${x}" y2="${y}" style="stroke: ${graph.dataColor}; stroke-width: 1;"/>`)
+            lines.push(h('line', { attrs: { x1: lastX, y1: lastY, x2: x, y2: y } }))
     
         lastX = x
         lastY = y
@@ -140,7 +144,15 @@ function renderScatterPlotGraph (model, graph, dotWidth) {
         const yLength = graph.yRange.end - graph.yRange.start
         const y = (1 - (point.value / yLength)) * (m.graphHeight - dotWidth)
 
-        return html`<rect x="${x}" y="${y}" style="fill: ${graph.dataColor};" data-value="${point.value}" width="${dotWidth}" height="${dotWidth}" />`                    
+        return h('rect', {
+            attrs: {
+                x,
+                y,
+                'data-value': point.value,
+                width: dotWidth,
+                height: dotWidth
+            }
+        })
     })
 }
 
@@ -176,6 +188,13 @@ function graphComponent (model, graph, update) {
         update()
     }
 
+    const _insertHook = function (vnode) {
+        // throttle mousemove handling to  not run more than 60 fps
+        const FPS = 60
+        const throttledMove = throttle(_mouseMove, 1000 / FPS)
+        vnode.elm.addEventListener('mousemove', throttledMove, { passive: true });
+    }
+
     return html`
         <svg xmlns="http://www.w3.org/2000/svg"
              class="graph"
@@ -185,7 +204,7 @@ function graphComponent (model, graph, update) {
              style="height: ${graph.height}px; width: 100%; background-color: white; font-size: 10px; text-anchor: middle; -moz-user-select: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; -khtml-user-drag: none; -moz-user-drag: none; -o-user-drag: none; user-drag: none;"
              @on:mouseup=${_stopDragging}
              @on:mouseleave=${_stopDragging}
-             @on:mousemove=${_mouseMove}>
+             @hook:insert=${_insertHook}>
             <title id="title">${graph.title}</title>
 
             ${verticalGridLinesMinor(model, graph, update)}
@@ -199,7 +218,7 @@ function graphComponent (model, graph, update) {
             </g>
 
             <g class="data"
-               style="stroke-width: 1;">
+               style="fill: ${graph.dataColor}; stroke: ${graph.dataColor}; stroke-width: 1;">
                ${graph.type === 'scatterPlot' ? renderScatterPlotGraph(model, graph, dotWidth) : renderLinePlotGraph(model, graph, dotWidth)}
             </g>
 
@@ -214,8 +233,7 @@ function graphComponent (model, graph, update) {
 function renderLabelComponent (model, graph, update) {
     if (graph.renderValueLabel && graph.selection.type === 'value') {
         const m = getGraphMetrics(model, graph)
-        return html`<text x="2" y="${m.graphHeight + m.bottomMargin - 8}" style="fill: rgba(0, 0, 0, 0.7); text-anchor: start; pointer-events: none;">t: ${graph.selection.time.toFixed(1)}s</text>
-            `
+        return html`<text x="2" y="${m.graphHeight + m.bottomMargin - 8}" style="fill: rgba(0, 0, 0, 0.7); text-anchor: start; pointer-events: none;">t: ${graph.selection.time.toFixed(1)}s</text>`
     }
 
     return html``
@@ -230,13 +248,17 @@ function tickMarksComponent (model, graph, update) {
     const constPixelsPerTick = 6
     const tickHeight = 4
 
-    if (graph.renderTicks)
-        for (let i=0; i < m.graphWidth; i += constPixelsPerTick)
-            tickMarks.push({ x: m.leftMargin + i, height: tickHeight })
+    if (graph.renderTicks) {
+        for (let i=0; i < m.graphWidth; i += constPixelsPerTick) {
+            const x = m.leftMargin + i
+            const height = tickHeight
+            tickMarks.push(
+                h('line', { attrs: { x1: x, x2: x, y1: m.graphHeight, y2: m.graphHeight + tickHeight } })
+            )
+        }
+    }
 
-    return tickMarks.map((tick) => {
-        return html`<line x1="${tick.x}" x2="${tick.x}" y1="${m.graphHeight}" y2="${m.graphHeight + tick.height}" />`
-    })
+    return tickMarks
 }
 
 
