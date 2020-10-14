@@ -35,7 +35,7 @@ function getGraphMetrics (model, graph) {
 }
 
 
-function gridLines (model, graph, update) {
+function verticalGridLinesMinor (model, graph, update) {
     if (!graph.gridLines)
         return html``
 
@@ -48,31 +48,57 @@ function gridLines (model, graph, update) {
         const pixelsPerMinorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMinor
         for (let i=0; i < m.graphWidth; i += pixelsPerMinorLine) {
             const x = m.leftMargin + i
-            gridLines.push({ x1: x, x2: x, y1: 0, y2: m.graphHeight, stroke: graph.gridLines.vertical.minorColor })
-        }
-
-        const pixelsPerMajorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMajor
-        for (let i=0; i < m.graphWidth; i += pixelsPerMajorLine) {
-            const x = m.leftMargin + i
-            gridLines.push({ x1: x, x2: x, y1: 0, y2: m.graphHeight, stroke: graph.gridLines.vertical.majorColor })
+            gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
         }
     }
 
+    const strokeWidth = 1 / (window.devicePixelRatio || 1)
+    return html`<g class="grid-minor" style="stroke: ${graph.gridLines.vertical.minorColor}; stroke-width: ${strokeWidth}">${gridLines}</g>`
+}
+
+
+function verticalGridLinesMajor (model, graph, update) {
+    if (!graph.gridLines)
+        return html``
+
+    const m = getGraphMetrics(model, graph)
+  
+    const gridLines = [ ]
+
+    if (graph.gridLines.vertical) {
+        const pixelsPerTick = 6
+        const pixelsPerMajorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMajor
+        for (let i=0; i < m.graphWidth; i += pixelsPerMajorLine) {
+            const x = m.leftMargin + i
+            gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
+        }
+    }
+
+    const strokeWidth = 1 / (window.devicePixelRatio || 1)
+    return html`<g class="grid-major" style="stroke: ${graph.gridLines.vertical.majorColor}; stroke-width: ${strokeWidth}">${gridLines}</g>`
+}
+
+
+function gridLines (model, graph, update) {
+    if (!graph.gridLines)
+        return html``
+
+    const m = getGraphMetrics(model, graph)
+  
+    const gridLines = [ ]
+
     if (graph.gridLines.horizontal) {
         const distanceBetweenLines = m.graphHeight / (graph.gridLines.horizontal.lineCount + 1)
-        for (let i=distanceBetweenLines; i < m.graphHeight; i += distanceBetweenLines) {
-            const y = i
-            gridLines.push({ x1: m.leftMargin, x2: m.leftMargin + m.graphWidth, y1: y, y2: y, stroke: graph.gridLines.horizontal.color, dashArray: '4 2' })
+        for (let y=distanceBetweenLines; y < m.graphHeight; y += distanceBetweenLines) {
+            gridLines.push(html`<line x1="${m.leftMargin}" x2="${m.leftMargin + m.graphWidth}" y1="${y}" y2="${y}"/>`)
         }
     }
 
     const strokeWidth = 1 / (window.devicePixelRatio || 1)
 
-    return gridLines.map((tick) => {
-        return html`<line x1="${tick.x1}" x2="${tick.x2}" y1="${tick.y1}" y2="${tick.y2}"
-                          style="stroke: ${tick.stroke}; stroke-width: ${strokeWidth}"
-                          @attrs:stroke-dasharray=${tick.dashArray}/>`
-    })
+    return html`<g class="grid-horiz"
+                   style="stroke: ${graph.gridLines.horizontal.color}; stroke-width: ${strokeWidth}"
+                   stroke-dasharray="4 2">${gridLines}</g>`
 }
 
 
@@ -162,9 +188,11 @@ function graphComponent (model, graph, update) {
              @on:mousemove=${_mouseMove}>
             <title id="title">${graph.title}</title>
 
-            <g class="grid y-grid" id="yGrid"
-               style="stroke: #888; stroke-dasharray: 0; stroke-width: 1;">
-                ${gridLines(model, graph, update)}
+            ${verticalGridLinesMinor(model, graph, update)}
+            ${verticalGridLinesMajor(model, graph, update)}
+            ${gridLines(model, graph, update)}
+
+            <g style="stroke: #888; stroke-dasharray: 0; stroke-width: 1;"> 
                 <line x1="${m.leftMargin}" x2="${m.leftMargin+m.graphWidth}" y1="${m.graphHeight}" y2="${m.graphHeight}" />
                 ${tickMarksComponent(model, graph, update)}
                 ${tickLabelsComponent(model, graph, update)}
