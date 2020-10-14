@@ -6,6 +6,9 @@ import throttle       from 'https://cdn.skypack.dev/lodash.throttle'
 import { h }          from 'https://cdn.jsdelivr.net/npm/snabbdom@2.1.0/build/package/h.js'; // helper function for creating vnodes
 
 
+const FPS = 60
+
+
 function getTimePeriodData (graph) {
     return graph.data.filter((dataPoint) => {
         // if data is outside of the time range skip it
@@ -161,27 +164,6 @@ function graphComponent (model, graph, update) {
 
     const dotWidth = 4
     const m = getGraphMetrics(model, graph)
-    //const timePeriod = (graph.timeRange.end - graph.timeRange.start)
-    //const pixelsPerSecond = m.graphWidth / timePeriod
-
-
-    const _mouseMove = function (ev) {
-        if (!graph.selection.dragging)
-            return
-
-        if (graph.selection.dragging === 'start') {
-            const pos = clamp((ev.offsetX - m.leftMargin) / m.graphWidth, 0, 1)
-            graph.selection.start = lerp(graph.timeRange.start, graph.timeRange.end, pos)
-        } else if (graph.selection.dragging === 'end') {
-            const pos = clamp((ev.offsetX - m.leftMargin) / m.graphWidth, 0, 1)
-            graph.selection.end = (pos === 1) ? Infinity : lerp(graph.timeRange.start, graph.timeRange.end, pos)
-        } else {
-            const pos = clamp((ev.offsetX - m.leftMargin) / m.graphWidth, 0, 1)
-            graph.selection.time = lerp(graph.timeRange.start, graph.timeRange.end, pos)
-        }
-
-        update()
-    }
 
     const _stopDragging = function () {
         graph.selection.dragging = undefined
@@ -189,10 +171,7 @@ function graphComponent (model, graph, update) {
     }
 
     const _insertHook = function (vnode) {
-        // throttle mousemove handling to  not run more than 60 fps
-        const FPS = 60
-        const throttledMove = throttle(_mouseMove, 1000 / FPS)
-        vnode.elm.addEventListener('mousemove', throttledMove, { passive: true });
+        model.elm = vnode.elm
     }
 
     return html`
@@ -203,7 +182,6 @@ function graphComponent (model, graph, update) {
              viewBox="0 0 ${model.width} ${graph.height}" 
              style="height: ${graph.height}px; width: 100%; background-color: white; font-size: 10px; text-anchor: middle; -moz-user-select: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; -khtml-user-drag: none; -moz-user-drag: none; -o-user-drag: none; user-drag: none;"
              @on:mouseup=${_stopDragging}
-             @on:mouseleave=${_stopDragging}
              @hook:insert=${_insertHook}>
             <title id="title">${graph.title}</title>
 
@@ -308,8 +286,34 @@ function timeRangeSelectionComponent (model, graph, update) {
     const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, graph.selection.start)
     const endX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, graph.selection.end)
 
+    const _mouseMove = throttle(function (ev) {
+        const rect = model.elm.getBoundingClientRect()
+        const x = clamp(ev.clientX - rect.left, 0, model.elm.clientWidth) //x position within the element.
+
+        if (graph.selection.dragging === 'start') {
+            const pos = clamp((x - m.leftMargin) / m.graphWidth, 0, 1)
+            graph.selection.start = lerp(graph.timeRange.start, graph.timeRange.end, pos)
+
+        } else if (graph.selection.dragging === 'end') {
+            const pos = clamp((x - m.leftMargin) / m.graphWidth, 0, 1)
+            graph.selection.end = (pos === 1) ? Infinity : lerp(graph.timeRange.start, graph.timeRange.end, pos)
+        }
+
+        update()
+    }, 1000 / FPS)
+
+    const _mouseUp = function () {
+        graph.selection.dragging = undefined
+        document.removeEventListener('mouseup', _mouseUp)
+        document.removeEventListener('mousemove', _mouseMove)
+        update()
+    }
+
+    // @param String position  start | end
     const _mouseDown = function (position) {
         graph.selection.dragging = position
+        document.addEventListener('mousemove', _mouseMove, { passive: true })
+        document.addEventListener('mouseup', _mouseUp)
         update()
     }
 
@@ -347,8 +351,27 @@ function timeRangeSelectionComponent (model, graph, update) {
 
 
 function timeValueSelectionComponent (model, graph, update) {
-    const _mouseDown = function (ev) {
+    
+    const _mouseMove = throttle(function (ev) {
+        const rect = model.elm.getBoundingClientRect()
+        const x = clamp(ev.clientX - rect.left, 0, model.elm.clientWidth) //x position within the element.
+
+        const pos = clamp((x - m.leftMargin) / m.graphWidth, 0, 1)
+        graph.selection.time = lerp(graph.timeRange.start, graph.timeRange.end, pos)
+        update()
+    }, 1000 / 60)
+
+    const _mouseUp = function () {
+        graph.selection.dragging = undefined
+        document.removeEventListener('mouseup', _mouseUp)
+        document.removeEventListener('mousemove', _mouseMove)
+        update()
+    }
+
+    const _mouseDown = function (position) {
         graph.selection.dragging = true
+        document.addEventListener('mousemove', _mouseMove, { passive: true })
+        document.addEventListener('mouseup', _mouseUp)
         update()
     }
 
