@@ -1,5 +1,10 @@
 # changelog
 
+## 0.5.0
+* improve rendering and dragging performance. fixes #9
+* make drag handles easier to use. fixes #5
+
+
 ## 0.4.0
 
 * add line plot graph type
