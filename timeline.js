@@ -14,7 +14,7 @@ function getTimePeriodData (graph) {
         // if data is outside of the time range skip it
         if (dataPoint.t < graph.timeRange.start)
             return false
-        
+
         if (dataPoint.t > graph.timeRange.end)
             return false
 
@@ -41,21 +41,18 @@ function getGraphMetrics (model, graph) {
 
 
 function verticalGridLinesMinor (model, graph, update) {
-    if (!graph.gridLines)
+    if (!graph.gridLines || !graph.gridLines.vertical)
         return html``
 
     const m = getGraphMetrics(model, graph)
-  
-    const gridLines = [ ]
 
-    if (graph.gridLines.vertical) {
-        const pixelsPerTick = 6
-        const pixelsPerMinorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMinor
-        for (let i=0; i < m.graphWidth; i += pixelsPerMinorLine) {
-            const x = m.leftMargin + i
-            //gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
-            gridLines.push(h('line', { attrs: { x1: x, x2: x, y1: 0, y2: m.graphHeight } }))
-        }
+    const gridLines = [ ]
+    const pixelsPerTick = 6
+    const pixelsPerMinorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMinor
+    for (let i=0; i < m.graphWidth; i += pixelsPerMinorLine) {
+        const x = m.leftMargin + i
+        //gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
+        gridLines.push(h('line', { attrs: { x1: x, x2: x, y1: 0, y2: m.graphHeight } }))
     }
 
     const strokeWidth = 1 / (window.devicePixelRatio || 1)
@@ -64,21 +61,18 @@ function verticalGridLinesMinor (model, graph, update) {
 
 
 function verticalGridLinesMajor (model, graph, update) {
-    if (!graph.gridLines)
+    if (!graph.gridLines || !graph.gridLines.vertical)
         return html``
 
     const m = getGraphMetrics(model, graph)
-  
-    const gridLines = [ ]
 
-    if (graph.gridLines.vertical) {
-        const pixelsPerTick = 6
-        const pixelsPerMajorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMajor
-        for (let i=0; i < m.graphWidth; i += pixelsPerMajorLine) {
-            const x = m.leftMargin + i
-            //gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
-            gridLines.push(h('line', { attrs: { x1: x, x2: x, y1: 0, y2: m.graphHeight } }))
-        }
+    const gridLines = [ ]
+    const pixelsPerTick = 6
+    const pixelsPerMajorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMajor
+    for (let i=0; i < m.graphWidth; i += pixelsPerMajorLine) {
+        const x = m.leftMargin + i
+        //gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
+        gridLines.push(h('line', { attrs: { x1: x, x2: x, y1: 0, y2: m.graphHeight } }))
     }
 
     const strokeWidth = 1 / (window.devicePixelRatio || 1)
@@ -87,18 +81,15 @@ function verticalGridLinesMajor (model, graph, update) {
 
 
 function gridLines (model, graph, update) {
-    if (!graph.gridLines)
+    if (!graph.gridLines || !graph.gridLines.horizontal)
         return html``
 
     const m = getGraphMetrics(model, graph)
-  
-    const gridLines = [ ]
 
-    if (graph.gridLines.horizontal) {
-        const distanceBetweenLines = m.graphHeight / (graph.gridLines.horizontal.lineCount + 1)
-        for (let y=distanceBetweenLines; y < m.graphHeight; y += distanceBetweenLines) {
-            gridLines.push(html`<line x1="${m.leftMargin}" x2="${m.leftMargin + m.graphWidth}" y1="${y}" y2="${y}"/>`)
-        }
+    const gridLines = [ ]
+    const distanceBetweenLines = m.graphHeight / (graph.gridLines.horizontal.lineCount + 1)
+    for (let y=distanceBetweenLines; y < m.graphHeight; y += distanceBetweenLines) {
+        gridLines.push(html`<line x1="${m.leftMargin}" x2="${m.leftMargin + m.graphWidth}" y1="${y}" y2="${y}"/>`)
     }
 
     const strokeWidth = 1 / (window.devicePixelRatio || 1)
@@ -112,7 +103,7 @@ function gridLines (model, graph, update) {
 function renderLinePlotGraph (model, graph, dotWidth) {
     const tp = getTimePeriodData(graph)
     const m = getGraphMetrics(model, graph)
-    
+
     const lines = [ ]
     let lastX, lastY
 
@@ -127,7 +118,7 @@ function renderLinePlotGraph (model, graph, dotWidth) {
 
         if (i > 0)
             lines.push(h('line', { attrs: { x1: lastX, y1: lastY, x2: x, y2: y } }))
-    
+
         lastX = x
         lastY = y
     }
@@ -139,7 +130,7 @@ function renderLinePlotGraph (model, graph, dotWidth) {
 function renderScatterPlotGraph (model, graph, dotWidth) {
     const tp = getTimePeriodData(graph)
     const m = getGraphMetrics(model, graph)
-    
+
     return tp.map((point) => {
         const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, point.t)
         const x = startX * (m.graphWidth - dotWidth) + m.leftMargin
@@ -179,7 +170,7 @@ function graphComponent (model, graph, update) {
              class="graph"
              aria-labelledby="title"
              role="img"
-             viewBox="0 0 ${model.width} ${graph.height}" 
+             viewBox="0 0 ${model.width} ${graph.height}"
              style="height: ${graph.height}px; width: 100%; background-color: white; font-size: 10px; text-anchor: middle; -moz-user-select: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; -khtml-user-drag: none; -moz-user-drag: none; -o-user-drag: none; user-drag: none;"
              @on:mouseup=${_stopDragging}
              @hook:insert=${_insertHook}>
@@ -189,7 +180,7 @@ function graphComponent (model, graph, update) {
             ${verticalGridLinesMajor(model, graph, update)}
             ${gridLines(model, graph, update)}
 
-            <g style="stroke: #888; stroke-dasharray: 0; stroke-width: 1;"> 
+            <g style="stroke: #888; stroke-dasharray: 0; stroke-width: 1;">
                 <line x1="${m.leftMargin}" x2="${m.leftMargin+m.graphWidth}" y1="${m.graphHeight}" y2="${m.graphHeight}" />
                 ${tickMarksComponent(model, graph, update)}
                 ${tickLabelsComponent(model, graph, update)}
@@ -220,7 +211,7 @@ function renderLabelComponent (model, graph, update) {
 
 function tickMarksComponent (model, graph, update) {
     const m = getGraphMetrics(model, graph)
-  
+
     const tickMarks = [ ]
 
     const constPixelsPerTick = 6
@@ -244,10 +235,10 @@ function tickLabelsComponent (model, graph, update) {
     const m = getGraphMetrics(model, graph)
 
     const timePeriod = (graph.timeRange.end - graph.timeRange.start)
-    
+
     const tickLabels = [ ]
     const constPixelsPerTick = 6
-   
+
     if (graph.renderTicks) {
         const tickCount = m.graphWidth / constPixelsPerTick
         const secondsPerTick = timePeriod / tickCount
@@ -340,18 +331,18 @@ function timeRangeSelectionComponent (model, graph, update) {
 
             <path d="M ${m.leftMargin + (endX * m.graphWidth)} 12 l -5 -4 l 0 -8    l 10 0  l 0 8 Z"
                   style="fill: rgb(255,64,129); cursor: ew-resize;"
-                  @on:mousedown=${()=> _mouseDown('end')}/> 
+                  @on:mousedown=${()=> _mouseDown('end')}/>
 
             <line x1="${m.leftMargin + (endX * m.graphWidth)}"
                   x2="${m.leftMargin + (endX * m.graphWidth)}"
                   y1="11"
-                  y2="${m.graphHeight+1}" stroke="rgb(255,64,129)"/>      
+                  y2="${m.graphHeight+1}" stroke="rgb(255,64,129)"/>
         </g>`
 }
 
 
 function timeValueSelectionComponent (model, graph, update) {
-    
+
     const _mouseMove = throttle(function (ev) {
         const rect = model.elm.getBoundingClientRect()
         const x = clamp(ev.clientX - rect.left, 0, model.elm.clientWidth) //x position within the element.
