@@ -1,5 +1,12 @@
 # changelog
 
+## 0.6.0
+* feature: provide a canvas based renderer (fixes #13)
+* feature: optionally render fill area under line plot (fixes #11)
+* bugfix: fix error occurring when optional gridlines field is missing from model
+* bugfix: prevent start and end time range sliders from overlapping (fixes #3)
+
+
 ## 0.5.0
 * improve rendering and dragging performance. fixes #9
 * make drag handles easier to use. fixes #5

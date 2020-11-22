@@ -133,6 +133,8 @@ You can also open `example.html` in a browser to see a more complicated example 
 
 by default, snabbdom-timeline will use `svg` to render these graphs. These are nice in that they are semantic elements, and are probably more accesible.
 
-However, if you're rendering a _lot_ of graphs with frequently updating data, you may find the performance is insufficient. For example, in one of my projects I'm
-rendering 50 of these graphs, with new data coming in at 60 frames per second, and storing 1,000 data points per graph. using virtual dom really bogs things down at this scale,
+However, if you're rendering a _lot_ of graphs with frequently updating data, you may find the svg based rendering performance is insufficient.
+
+For example, in one of my projects I'm
+rendering 50 of these graphs, with new data coming in at 60 frames per second, and storing 1,000 data points per graph. Using virtual dom really bogs things down at this scale,
 so in that case I use the `canvas` renderer option which has much better performance, at the cost of blurrier text and less semantically friendly markup.
