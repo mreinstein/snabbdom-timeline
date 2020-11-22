@@ -9,8 +9,8 @@ an interactive timeline component implemented in snabbdom
 * can stack multiple graphs
 * single time or ranged time selectors
 * data oriented, functional design
-* tiny! (~ 300 lines of code)
-* renders with SVG
+* tiny! (~ 400 lines of code)
+* renders with SVG or canvas
 
 
 ## usage
@@ -38,6 +38,7 @@ import timeline from 'https://cdn.jsdelivr.net/gh/mreinstein/snabbdom-timeline/t
 const model = {
     container: document.createElement('div'),
     width: 0,
+    renderer: 'svg', // canvas | svg
     graphs: [
         {
             title: 'test title',
@@ -123,6 +124,15 @@ There are 2 available graph types:
 ### linePlot
 
 ![alt text](plot-line.png "line plot graph")
- 
+
 
 You can also open `example.html` in a browser to see a more complicated example with 2 graphs linked together.
+
+
+## renderer option
+
+by default, snabbdom-timeline will use `svg` to render these graphs. These are nice in that they are semantic elements, and are probably more accesible.
+
+However, if you're rendering a _lot_ of graphs with frequently updating data, you may find the performance is insufficient. For example, in one of my projects I'm
+rendering 50 of these graphs, with new data coming in at 60 frames per second, and storing 1,000 data points per graph. using virtual dom really bogs things down at this scale,
+so in that case I use the `canvas` renderer option which has much better performance, at the cost of blurrier text and less semantically friendly markup.

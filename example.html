@@ -31,11 +31,12 @@ import timeline  from './timeline.js'
 const model = {
     container: document.createElement('div'),
     width: 0,
+    renderer: 'canvas', // svg | canvas
     graphs: [
         {
             title: 'test title',
             label: 'all time',
-            type: 'scatterPlot',  // scatterPlot | linePlot
+            type: 'linePlot',  // scatterPlot | linePlot
             timeRange: {
                 start: 0,  // seconds
                 end: 0     // seconds
@@ -52,6 +53,7 @@ const model = {
             },
             height: 60,           // pixels
             dataColor: 'dodgerblue',
+            linePlotAreaColor: 'rgba(41, 147, 251, 0.3)', // color to fill area if in linePlot mode
             renderTicks: false,
             renderValueLabel: false,
 /*
@@ -93,7 +95,7 @@ const model = {
             dataColor: 'dodgerblue',
             renderTicks: true,
             renderValueLabel: true,
-        
+
             gridLines: {
                 vertical: {
                     majorColor: '#dedede',
@@ -112,22 +114,20 @@ const model = {
     ]
 }
 
-window.m = model
-
 
 document.body.appendChild(model.container)
 
 
 function timelineComponent (model, update) {
     // link the lower graph to show data within the selected range from the upper graph
-    model.graphs[1].timeRange.start = 
+    model.graphs[1].timeRange.start =
         (model.graphs[0].selection.start === 0) ? model.graphs[0].timeRange.start : model.graphs[0].selection.start
 
     model.graphs[1].timeRange.end =
         (model.graphs[0].selection.end === Infinity) ? model.graphs[0].timeRange.end : model.graphs[0].selection.end
 
     model.graphs[1].selection.time = clamp(model.graphs[1].selection.time,model.graphs[1].timeRange.start, model.graphs[1].timeRange.end)
-      
+
     return timeline(model, update)
 }
 
@@ -148,7 +148,6 @@ setInterval(function () {
 
     model.graphs[0].data.push({ t, value })
     model.graphs[1].data.push({ t, value })
-
 
     if (model.graphs[0].data.length > 0)
         model.graphs[0].timeRange.end = model.graphs[0].data[model.graphs[0].data.length-1].t
