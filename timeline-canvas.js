@@ -512,7 +512,7 @@ export default function timelineComponent (model, update) {
     return html`
         <div class="graph-stack"
              @hook:insert=${_insertHook}
-             style="width: 100%; display: grid; grid-template-columns: 1fr; border: 1px solid #adafaf;">
+             style="width: 100%; display: grid; grid-template-columns: 1fr; border: ${model.border || 'none'};">
             ${model.graphs.map((g) => graphComponent(model, g, update))}
         </div>`
 }
