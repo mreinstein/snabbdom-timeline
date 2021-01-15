@@ -214,7 +214,7 @@ function graphComponent (model, graph, update) {
 
         if (graph.selection.dragging === 'time') {
             const pos = clamp((x - m.leftMargin) / m.graphWidth, 0, 1)
-            graph.selection.time = lerp(graph.timeRange.start, graph.timeRange.end, pos)
+            graph.selection.time = (pos === 1) ? Infinity : lerp(graph.timeRange.start, graph.timeRange.end, pos)
 
         } else if (graph.selection.dragging === 'start') {
             const pos = clamp((x - m.leftMargin) / m.graphWidth, 0, 1)
@@ -332,7 +332,9 @@ function renderLabelComponent (model, graph, update) {
 
     if (graph.renderValueLabel && graph.selection.type === 'value') {
         ctx.textAlign = 'start'
-        ctx.fillText(`t: ${graph.selection.time.toFixed(1)}s`, 2, m.graphHeight + m.bottomMargin - 8)
+        const t = (graph.selection.time === Infinity ? graph.timeRange.end : graph.selection.time).toFixed(1)
+
+        ctx.fillText(`t: ${t}s`, 2, m.graphHeight + m.bottomMargin - 8)
     }
 
     ctx.textAlign = 'end'

@@ -89,7 +89,7 @@ const model = {
             },
             selection: {
                 type: 'value',
-                time: 0,
+                time: Infinity,
                 dragging: false
             },
             height: 140,           // pixels
@@ -127,7 +127,8 @@ function timelineComponent (model, update) {
     model.graphs[1].timeRange.end =
         (model.graphs[0].selection.end === Infinity) ? model.graphs[0].timeRange.end : model.graphs[0].selection.end
 
-    model.graphs[1].selection.time = clamp(model.graphs[1].selection.time,model.graphs[1].timeRange.start, model.graphs[1].timeRange.end)
+    if (model.graphs[1].selection.time !== Infinity)
+        model.graphs[1].selection.time = clamp(model.graphs[1].selection.time,model.graphs[1].timeRange.start, model.graphs[1].timeRange.end)
 
     return timeline(model, update)
 }

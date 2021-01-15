@@ -213,7 +213,8 @@ function graphComponent (model, graph, update) {
 function renderLabelComponent (model, graph, update) {
     if (graph.renderValueLabel && graph.selection.type === 'value') {
         const m = getGraphMetrics(model, graph)
-        return html`<text x="2" y="${m.graphHeight + m.bottomMargin - 8}" style="fill: rgba(0, 0, 0, 0.7); text-anchor: start; pointer-events: none;">t: ${graph.selection.time.toFixed(1)}s</text>`
+        const t = (graph.selection.time === Infinity ? graph.timeRange.end : graph.selection.time).toFixed(1)
+        return html`<text x="2" y="${m.graphHeight + m.bottomMargin - 8}" style="fill: rgba(0, 0, 0, 0.7); text-anchor: start; pointer-events: none;">t: ${t}s</text>`
     }
 
     return html``
@@ -367,7 +368,7 @@ function timeValueSelectionComponent (model, graph, update) {
         const x = clamp(ev.clientX - rect.left, 0, model.elm.clientWidth) //x position within the element.
 
         const pos = clamp((x - m.leftMargin) / m.graphWidth, 0, 1)
-        graph.selection.time = lerp(graph.timeRange.start, graph.timeRange.end, pos)
+        graph.selection.time = (pos === 1) ? Infinity : lerp(graph.timeRange.start, graph.timeRange.end, pos)
         update()
     }, 1000 / 60)
 
