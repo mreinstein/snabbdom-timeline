@@ -1,5 +1,9 @@
 # changelog
 
+## 0.7.0
+* when time selection is all the way to the right, store the `selection.time` value as Infinity
+
+
 ## 0.6.0
 * feature: provide a canvas based renderer (fixes #13)
 * feature: optionally render fill area under line plot (fixes #11)

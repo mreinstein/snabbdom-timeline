@@ -1555,7 +1555,7 @@ function graphComponent (model, graph, update) {
 
         if (graph.selection.dragging === 'time') {
             const pos = clamp((x - m.leftMargin) / m.graphWidth, 0, 1);
-            graph.selection.time = lerp(graph.timeRange.start, graph.timeRange.end, pos);
+            graph.selection.time = (pos === 1) ? Infinity : lerp(graph.timeRange.start, graph.timeRange.end, pos);
 
         } else if (graph.selection.dragging === 'start') {
             const pos = clamp((x - m.leftMargin) / m.graphWidth, 0, 1);
@@ -1673,7 +1673,9 @@ function renderLabelComponent (model, graph, update) {
 
     if (graph.renderValueLabel && graph.selection.type === 'value') {
         ctx.textAlign = 'start';
-        ctx.fillText(`t: ${graph.selection.time.toFixed(1)}s`, 2, m.graphHeight + m.bottomMargin - 8);
+        const t = (graph.selection.time === Infinity ? graph.timeRange.end : graph.selection.time).toFixed(1);
+
+        ctx.fillText(`t: ${t}s`, 2, m.graphHeight + m.bottomMargin - 8);
     }
 
     ctx.textAlign = 'end';
@@ -1852,7 +1854,7 @@ function timelineComponent (model, update) {
     return index`
         <div class="graph-stack"
              @hook:insert=${_insertHook}
-             style="width: 100%; display: grid; grid-template-columns: 1fr; border: 1px solid #adafaf;">
+             style="width: 100%; display: grid; grid-template-columns: 1fr; border: ${model.border || 'none'};">
             ${model.graphs.map((g) => graphComponent(model, g, update))}
         </div>`
 }
@@ -2131,7 +2133,8 @@ function graphComponent$1 (model, graph, update) {
 function renderLabelComponent$1 (model, graph, update) {
     if (graph.renderValueLabel && graph.selection.type === 'value') {
         const m = getGraphMetrics$1(model, graph);
-        return index`<text x="2" y="${m.graphHeight + m.bottomMargin - 8}" style="fill: rgba(0, 0, 0, 0.7); text-anchor: start; pointer-events: none;">t: ${graph.selection.time.toFixed(1)}s</text>`
+        const t = (graph.selection.time === Infinity ? graph.timeRange.end : graph.selection.time).toFixed(1);
+        return index`<text x="2" y="${m.graphHeight + m.bottomMargin - 8}" style="fill: rgba(0, 0, 0, 0.7); text-anchor: start; pointer-events: none;">t: ${t}s</text>`
     }
 
     return index``
@@ -2284,7 +2287,7 @@ function timeValueSelectionComponent$1 (model, graph, update) {
         const x = clamp(ev.clientX - rect.left, 0, model.elm.clientWidth); //x position within the element.
 
         const pos = clamp((x - m.leftMargin) / m.graphWidth, 0, 1);
-        graph.selection.time = lerp(graph.timeRange.start, graph.timeRange.end, pos);
+        graph.selection.time = (pos === 1) ? Infinity : lerp(graph.timeRange.start, graph.timeRange.end, pos);
         update();
     }, 1000 / 60);
 
@@ -2334,7 +2337,7 @@ function timelineComponent$1 (model, update) {
     return index`
         <div class="graph-stack"
              @hook:insert=${_insertHook}
-             style="width: 100%; display: grid; grid-template-columns: 1fr; border: 1px solid #adafaf;">
+             style="width: 100%; display: grid; grid-template-columns: 1fr; border: ${model.border || 'none'};">
             ${model.graphs.map((g) => graphComponent$1(model, g, update))}
         </div>`
 }
