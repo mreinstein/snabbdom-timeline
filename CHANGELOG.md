@@ -1,5 +1,10 @@
 # changelog
 
+## 0.8.0
+* update snabby dependency
+* remove unneeded rollup modules
+
+
 ## 0.7.0
 * when time selection is all the way to the right, store the `selection.time` value as Infinity
 
