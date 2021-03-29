@@ -26,1184 +26,7 @@ function findPosOnScale (start, end, value) {
     return x / length
 }
 
-function vnode(sel, data, children, text, elm) {
-  const key = data === undefined ? undefined : data.key;
-  return { sel, data, children, text, elm, key };
-}
-
-const array = Array.isArray;
-function primitive(s) {
-  return typeof s === 'string' || typeof s === 'number';
-}
-
-function createElement(tagName) {
-  return document.createElement(tagName);
-}
-function createElementNS(namespaceURI, qualifiedName) {
-  return document.createElementNS(namespaceURI, qualifiedName);
-}
-function createTextNode(text) {
-  return document.createTextNode(text);
-}
-function createComment(text) {
-  return document.createComment(text);
-}
-function insertBefore(parentNode, newNode, referenceNode) {
-  parentNode.insertBefore(newNode, referenceNode);
-}
-function removeChild(node, child) {
-  node.removeChild(child);
-}
-function appendChild(node, child) {
-  node.appendChild(child);
-}
-function parentNode(node) {
-  return node.parentNode;
-}
-function nextSibling(node) {
-  return node.nextSibling;
-}
-function tagName(elm) {
-  return elm.tagName;
-}
-function setTextContent(node, text) {
-  node.textContent = text;
-}
-function getTextContent(node) {
-  return node.textContent;
-}
-function isElement(node) {
-  return node.nodeType === 1;
-}
-function isText(node) {
-  return node.nodeType === 3;
-}
-function isComment(node) {
-  return node.nodeType === 8;
-}
-const htmlDomApi = {
-  createElement,
-  createElementNS,
-  createTextNode,
-  createComment,
-  insertBefore,
-  removeChild,
-  appendChild,
-  parentNode,
-  nextSibling,
-  tagName,
-  setTextContent,
-  getTextContent,
-  isElement,
-  isText,
-  isComment };
-
-function isUndef(s) {
-  return s === undefined;
-}
-function isDef(s) {
-  return s !== undefined;
-}
-const emptyNode = vnode('', {}, [], undefined, undefined);
-function sameVnode(vnode1, vnode2) {
-  return vnode1.key === vnode2.key && vnode1.sel === vnode2.sel;
-}
-function isVnode(vnode) {
-  return vnode.sel !== undefined;
-}
-function createKeyToOldIdx(children, beginIdx, endIdx) {
-  var _a;
-  const map = {};
-  for (let i = beginIdx; i <= endIdx; ++i) {
-    const key = (_a = children[i]) === null || _a === void 0 ? void 0 : _a.key;
-    if (key !== undefined) {
-      map[key] = i;
-    }
-  }
-  return map;
-}
-const hooks = ['create', 'update', 'remove', 'destroy', 'pre', 'post'];
-function init(modules, domApi) {
-  let i;
-  let j;
-  const cbs = {
-    create: [],
-    update: [],
-    remove: [],
-    destroy: [],
-    pre: [],
-    post: [] };
-
-  const api = domApi !== undefined ? domApi : htmlDomApi;
-  for (i = 0; i < hooks.length; ++i) {
-    cbs[hooks[i]] = [];
-    for (j = 0; j < modules.length; ++j) {
-      const hook = modules[j][hooks[i]];
-      if (hook !== undefined) {
-        cbs[hooks[i]].push(hook);
-      }
-    }
-  }
-  function emptyNodeAt(elm) {
-    const id = elm.id ? '#' + elm.id : '';
-    const c = elm.className ? '.' + elm.className.split(' ').join('.') : '';
-    return vnode(api.tagName(elm).toLowerCase() + id + c, {}, [], undefined, elm);
-  }
-  function createRmCb(childElm, listeners) {
-    return function rmCb() {
-      if (--listeners === 0) {
-        const parent = api.parentNode(childElm);
-        api.removeChild(parent, childElm);
-      }
-    };
-  }
-  function createElm(vnode, insertedVnodeQueue) {
-    var _a, _b;
-    let i;
-    let data = vnode.data;
-    if (data !== undefined) {
-      const init = (_a = data.hook) === null || _a === void 0 ? void 0 : _a.init;
-      if (isDef(init)) {
-        init(vnode);
-        data = vnode.data;
-      }
-    }
-    const children = vnode.children;
-    const sel = vnode.sel;
-    if (sel === '!') {
-      if (isUndef(vnode.text)) {
-        vnode.text = '';
-      }
-      vnode.elm = api.createComment(vnode.text);
-    } else
-    if (sel !== undefined) {
-      // Parse selector
-      const hashIdx = sel.indexOf('#');
-      const dotIdx = sel.indexOf('.', hashIdx);
-      const hash = hashIdx > 0 ? hashIdx : sel.length;
-      const dot = dotIdx > 0 ? dotIdx : sel.length;
-      const tag = hashIdx !== -1 || dotIdx !== -1 ? sel.slice(0, Math.min(hash, dot)) : sel;
-      const elm = vnode.elm = isDef(data) && isDef(i = data.ns) ?
-      api.createElementNS(i, tag) :
-      api.createElement(tag);
-      if (hash < dot)
-      elm.setAttribute('id', sel.slice(hash + 1, dot));
-      if (dotIdx > 0)
-      elm.setAttribute('class', sel.slice(dot + 1).replace(/\./g, ' '));
-      for (i = 0; i < cbs.create.length; ++i)
-      cbs.create[i](emptyNode, vnode);
-      if (array(children)) {
-        for (i = 0; i < children.length; ++i) {
-          const ch = children[i];
-          if (ch != null) {
-            api.appendChild(elm, createElm(ch, insertedVnodeQueue));
-          }
-        }
-      } else
-      if (primitive(vnode.text)) {
-        api.appendChild(elm, api.createTextNode(vnode.text));
-      }
-      const hook = vnode.data.hook;
-      if (isDef(hook)) {
-        (_b = hook.create) === null || _b === void 0 ? void 0 : _b.call(hook, emptyNode, vnode);
-        if (hook.insert) {
-          insertedVnodeQueue.push(vnode);
-        }
-      }
-    } else
-    {
-      vnode.elm = api.createTextNode(vnode.text);
-    }
-    return vnode.elm;
-  }
-  function addVnodes(parentElm, before, vnodes, startIdx, endIdx, insertedVnodeQueue) {
-    for (; startIdx <= endIdx; ++startIdx) {
-      const ch = vnodes[startIdx];
-      if (ch != null) {
-        api.insertBefore(parentElm, createElm(ch, insertedVnodeQueue), before);
-      }
-    }
-  }
-  function invokeDestroyHook(vnode) {
-    var _a, _b;
-    const data = vnode.data;
-    if (data !== undefined) {
-      (_b = (_a = data === null || data === void 0 ? void 0 : data.hook) === null || _a === void 0 ? void 0 : _a.destroy) === null || _b === void 0 ? void 0 : _b.call(_a, vnode);
-      for (let i = 0; i < cbs.destroy.length; ++i)
-      cbs.destroy[i](vnode);
-      if (vnode.children !== undefined) {
-        for (let j = 0; j < vnode.children.length; ++j) {
-          const child = vnode.children[j];
-          if (child != null && typeof child !== 'string') {
-            invokeDestroyHook(child);
-          }
-        }
-      }
-    }
-  }
-  function removeVnodes(parentElm, vnodes, startIdx, endIdx) {
-    var _a, _b;
-    for (; startIdx <= endIdx; ++startIdx) {
-      let listeners;
-      let rm;
-      const ch = vnodes[startIdx];
-      if (ch != null) {
-        if (isDef(ch.sel)) {
-          invokeDestroyHook(ch);
-          listeners = cbs.remove.length + 1;
-          rm = createRmCb(ch.elm, listeners);
-          for (let i = 0; i < cbs.remove.length; ++i)
-          cbs.remove[i](ch, rm);
-          const removeHook = (_b = (_a = ch === null || ch === void 0 ? void 0 : ch.data) === null || _a === void 0 ? void 0 : _a.hook) === null || _b === void 0 ? void 0 : _b.remove;
-          if (isDef(removeHook)) {
-            removeHook(ch, rm);
-          } else
-          {
-            rm();
-          }
-        } else
-        {// Text node
-          api.removeChild(parentElm, ch.elm);
-        }
-      }
-    }
-  }
-  function updateChildren(parentElm, oldCh, newCh, insertedVnodeQueue) {
-    let oldStartIdx = 0;
-    let newStartIdx = 0;
-    let oldEndIdx = oldCh.length - 1;
-    let oldStartVnode = oldCh[0];
-    let oldEndVnode = oldCh[oldEndIdx];
-    let newEndIdx = newCh.length - 1;
-    let newStartVnode = newCh[0];
-    let newEndVnode = newCh[newEndIdx];
-    let oldKeyToIdx;
-    let idxInOld;
-    let elmToMove;
-    let before;
-    while (oldStartIdx <= oldEndIdx && newStartIdx <= newEndIdx) {
-      if (oldStartVnode == null) {
-        oldStartVnode = oldCh[++oldStartIdx]; // Vnode might have been moved left
-      } else
-      if (oldEndVnode == null) {
-        oldEndVnode = oldCh[--oldEndIdx];
-      } else
-      if (newStartVnode == null) {
-        newStartVnode = newCh[++newStartIdx];
-      } else
-      if (newEndVnode == null) {
-        newEndVnode = newCh[--newEndIdx];
-      } else
-      if (sameVnode(oldStartVnode, newStartVnode)) {
-        patchVnode(oldStartVnode, newStartVnode, insertedVnodeQueue);
-        oldStartVnode = oldCh[++oldStartIdx];
-        newStartVnode = newCh[++newStartIdx];
-      } else
-      if (sameVnode(oldEndVnode, newEndVnode)) {
-        patchVnode(oldEndVnode, newEndVnode, insertedVnodeQueue);
-        oldEndVnode = oldCh[--oldEndIdx];
-        newEndVnode = newCh[--newEndIdx];
-      } else
-      if (sameVnode(oldStartVnode, newEndVnode)) {// Vnode moved right
-        patchVnode(oldStartVnode, newEndVnode, insertedVnodeQueue);
-        api.insertBefore(parentElm, oldStartVnode.elm, api.nextSibling(oldEndVnode.elm));
-        oldStartVnode = oldCh[++oldStartIdx];
-        newEndVnode = newCh[--newEndIdx];
-      } else
-      if (sameVnode(oldEndVnode, newStartVnode)) {// Vnode moved left
-        patchVnode(oldEndVnode, newStartVnode, insertedVnodeQueue);
-        api.insertBefore(parentElm, oldEndVnode.elm, oldStartVnode.elm);
-        oldEndVnode = oldCh[--oldEndIdx];
-        newStartVnode = newCh[++newStartIdx];
-      } else
-      {
-        if (oldKeyToIdx === undefined) {
-          oldKeyToIdx = createKeyToOldIdx(oldCh, oldStartIdx, oldEndIdx);
-        }
-        idxInOld = oldKeyToIdx[newStartVnode.key];
-        if (isUndef(idxInOld)) {// New element
-          api.insertBefore(parentElm, createElm(newStartVnode, insertedVnodeQueue), oldStartVnode.elm);
-        } else
-        {
-          elmToMove = oldCh[idxInOld];
-          if (elmToMove.sel !== newStartVnode.sel) {
-            api.insertBefore(parentElm, createElm(newStartVnode, insertedVnodeQueue), oldStartVnode.elm);
-          } else
-          {
-            patchVnode(elmToMove, newStartVnode, insertedVnodeQueue);
-            oldCh[idxInOld] = undefined;
-            api.insertBefore(parentElm, elmToMove.elm, oldStartVnode.elm);
-          }
-        }
-        newStartVnode = newCh[++newStartIdx];
-      }
-    }
-    if (oldStartIdx <= oldEndIdx || newStartIdx <= newEndIdx) {
-      if (oldStartIdx > oldEndIdx) {
-        before = newCh[newEndIdx + 1] == null ? null : newCh[newEndIdx + 1].elm;
-        addVnodes(parentElm, before, newCh, newStartIdx, newEndIdx, insertedVnodeQueue);
-      } else
-      {
-        removeVnodes(parentElm, oldCh, oldStartIdx, oldEndIdx);
-      }
-    }
-  }
-  function patchVnode(oldVnode, vnode, insertedVnodeQueue) {
-    var _a, _b, _c, _d, _e;
-    const hook = (_a = vnode.data) === null || _a === void 0 ? void 0 : _a.hook;
-    (_b = hook === null || hook === void 0 ? void 0 : hook.prepatch) === null || _b === void 0 ? void 0 : _b.call(hook, oldVnode, vnode);
-    const elm = vnode.elm = oldVnode.elm;
-    const oldCh = oldVnode.children;
-    const ch = vnode.children;
-    if (oldVnode === vnode)
-    return;
-    if (vnode.data !== undefined) {
-      for (let i = 0; i < cbs.update.length; ++i)
-      cbs.update[i](oldVnode, vnode);
-      (_d = (_c = vnode.data.hook) === null || _c === void 0 ? void 0 : _c.update) === null || _d === void 0 ? void 0 : _d.call(_c, oldVnode, vnode);
-    }
-    if (isUndef(vnode.text)) {
-      if (isDef(oldCh) && isDef(ch)) {
-        if (oldCh !== ch)
-        updateChildren(elm, oldCh, ch, insertedVnodeQueue);
-      } else
-      if (isDef(ch)) {
-        if (isDef(oldVnode.text))
-        api.setTextContent(elm, '');
-        addVnodes(elm, null, ch, 0, ch.length - 1, insertedVnodeQueue);
-      } else
-      if (isDef(oldCh)) {
-        removeVnodes(elm, oldCh, 0, oldCh.length - 1);
-      } else
-      if (isDef(oldVnode.text)) {
-        api.setTextContent(elm, '');
-      }
-    } else
-    if (oldVnode.text !== vnode.text) {
-      if (isDef(oldCh)) {
-        removeVnodes(elm, oldCh, 0, oldCh.length - 1);
-      }
-      api.setTextContent(elm, vnode.text);
-    }
-    (_e = hook === null || hook === void 0 ? void 0 : hook.postpatch) === null || _e === void 0 ? void 0 : _e.call(hook, oldVnode, vnode);
-  }
-  return function patch(oldVnode, vnode) {
-    let i, elm, parent;
-    const insertedVnodeQueue = [];
-    for (i = 0; i < cbs.pre.length; ++i)
-    cbs.pre[i]();
-    if (!isVnode(oldVnode)) {
-      oldVnode = emptyNodeAt(oldVnode);
-    }
-    if (sameVnode(oldVnode, vnode)) {
-      patchVnode(oldVnode, vnode, insertedVnodeQueue);
-    } else
-    {
-      elm = oldVnode.elm;
-      parent = api.parentNode(elm);
-      createElm(vnode, insertedVnodeQueue);
-      if (parent !== null) {
-        api.insertBefore(parent, vnode.elm, api.nextSibling(elm));
-        removeVnodes(parent, [oldVnode], 0, 0);
-      }
-    }
-    for (i = 0; i < insertedVnodeQueue.length; ++i) {
-      insertedVnodeQueue[i].data.hook.insert(insertedVnodeQueue[i]);
-    }
-    for (i = 0; i < cbs.post.length; ++i)
-    cbs.post[i]();
-    return vnode;
-  };
-}
-
-function addNS(data, children, sel) {
-  data.ns = 'http://www.w3.org/2000/svg';
-  if (sel !== 'foreignObject' && children !== undefined) {
-    for (let i = 0; i < children.length; ++i) {
-      const childData = children[i].data;
-      if (childData !== undefined) {
-        addNS(childData, children[i].children, children[i].sel);
-      }
-    }
-  }
-}
-function h(sel, b, c) {
-  var data = {};
-  var children;
-  var text;
-  var i;
-  if (c !== undefined) {
-    if (b !== null) {
-      data = b;
-    }
-    if (array(c)) {
-      children = c;
-    } else
-    if (primitive(c)) {
-      text = c;
-    } else
-    if (c && c.sel) {
-      children = [c];
-    }
-  } else
-  if (b !== undefined && b !== null) {
-    if (array(b)) {
-      children = b;
-    } else
-    if (primitive(b)) {
-      text = b;
-    } else
-    if (b && b.sel) {
-      children = [b];
-    } else
-    {
-      data = b;
-    }
-  }
-  if (children !== undefined) {
-    for (i = 0; i < children.length; ++i) {
-      if (primitive(children[i]))
-      children[i] = vnode(undefined, undefined, undefined, children[i], undefined);
-    }
-  }
-  if (sel[0] === 's' && sel[1] === 'v' && sel[2] === 'g' && (
-  sel.length === 3 || sel[3] === '.' || sel[3] === '#')) {
-    addNS(data, children, sel);
-  }
-  return vnode(sel, data, children, text, undefined);
-}
-
-function copyToThunk(vnode, thunk) {
-  vnode.data.fn = thunk.data.fn;
-  vnode.data.args = thunk.data.args;
-  thunk.data = vnode.data;
-  thunk.children = vnode.children;
-  thunk.text = vnode.text;
-  thunk.elm = vnode.elm;
-}
-function init$1(thunk) {
-  const cur = thunk.data;
-  const vnode = cur.fn.apply(undefined, cur.args);
-  copyToThunk(vnode, thunk);
-}
-function prepatch(oldVnode, thunk) {
-  let i;
-  const old = oldVnode.data;
-  const cur = thunk.data;
-  const oldArgs = old.args;
-  const args = cur.args;
-  if (old.fn !== cur.fn || oldArgs.length !== args.length) {
-    copyToThunk(cur.fn.apply(undefined, args), thunk);
-    return;
-  }
-  for (i = 0; i < args.length; ++i) {
-    if (oldArgs[i] !== args[i]) {
-      copyToThunk(cur.fn.apply(undefined, args), thunk);
-      return;
-    }
-  }
-  copyToThunk(oldVnode, thunk);
-}
-const thunk = function thunk(sel, key, fn, args) {
-  if (args === undefined) {
-    args = fn;
-    fn = key;
-    key = undefined;
-  }
-  return h(sel, {
-    key: key,
-    hook: { init: init$1, prepatch },
-    fn: fn,
-    args: args });
-
-};
-
-var hyperscriptAttributeToProperty = attributeToProperty;
-
-var transform = {
-  'class': 'className',
-  'for': 'htmlFor',
-  'http-equiv': 'httpEquiv' };
-
-
-function attributeToProperty(h) {
-  return function (tagName, attrs, children) {
-    for (var attr in attrs) {
-      if (attr in transform) {
-        attrs[transform[attr]] = attrs[attr];
-        delete attrs[attr];
-      }
-    }
-    return h(tagName, attrs, children);
-  };
-}
-
-var VAR = 0,TEXT = 1,OPEN = 2,CLOSE = 3,ATTR = 4;
-var ATTR_KEY = 5,ATTR_KEY_W = 6;
-var ATTR_VALUE_W = 7,ATTR_VALUE = 8;
-var ATTR_VALUE_SQ = 9,ATTR_VALUE_DQ = 10;
-var ATTR_EQ = 11,ATTR_BREAK = 12;
-var COMMENT = 13;
-
-var hyperx = function (h, opts) {
-  if (!opts) opts = {};
-  var concat = opts.concat || function (a, b) {
-    return String(a) + String(b);
-  };
-  if (opts.attrToProp !== false) {
-    h = hyperscriptAttributeToProperty(h);
-  }
-
-  return function (strings) {
-    var state = TEXT,reg = '';
-    var arglen = arguments.length;
-    var parts = [];
-
-    for (var i = 0; i < strings.length; i++) {
-      if (i < arglen - 1) {
-        var arg = arguments[i + 1];
-        var p = parse(strings[i]);
-        var xstate = state;
-        if (xstate === ATTR_VALUE_DQ) xstate = ATTR_VALUE;
-        if (xstate === ATTR_VALUE_SQ) xstate = ATTR_VALUE;
-        if (xstate === ATTR_VALUE_W) xstate = ATTR_VALUE;
-        if (xstate === ATTR) xstate = ATTR_KEY;
-        if (xstate === OPEN) {
-          if (reg === '/') {
-            p.push([OPEN, '/', arg]);
-            reg = '';
-          } else {
-            p.push([OPEN, arg]);
-          }
-        } else if (xstate === COMMENT && opts.comments) {
-          reg += String(arg);
-        } else if (xstate !== COMMENT) {
-          p.push([VAR, xstate, arg]);
-        }
-        parts.push.apply(parts, p);
-      } else parts.push.apply(parts, parse(strings[i]));
-    }
-
-    var tree = [null, {}, []];
-    var stack = [[tree, -1]];
-    for (var i = 0; i < parts.length; i++) {
-      var cur = stack[stack.length - 1][0];
-      var p = parts[i],s = p[0];
-      if (s === OPEN && /^\//.test(p[1])) {
-        var ix = stack[stack.length - 1][1];
-        if (stack.length > 1) {
-          stack.pop();
-          stack[stack.length - 1][0][2][ix] = h(
-          cur[0], cur[1], cur[2].length ? cur[2] : undefined);
-
-        }
-      } else if (s === OPEN) {
-        var c = [p[1], {}, []];
-        cur[2].push(c);
-        stack.push([c, cur[2].length - 1]);
-      } else if (s === ATTR_KEY || s === VAR && p[1] === ATTR_KEY) {
-        var key = '';
-        var copyKey;
-        for (; i < parts.length; i++) {
-          if (parts[i][0] === ATTR_KEY) {
-            key = concat(key, parts[i][1]);
-          } else if (parts[i][0] === VAR && parts[i][1] === ATTR_KEY) {
-            if (typeof parts[i][2] === 'object' && !key) {
-              for (copyKey in parts[i][2]) {
-                if (parts[i][2].hasOwnProperty(copyKey) && !cur[1][copyKey]) {
-                  cur[1][copyKey] = parts[i][2][copyKey];
-                }
-              }
-            } else {
-              key = concat(key, parts[i][2]);
-            }
-          } else break;
-        }
-        if (parts[i][0] === ATTR_EQ) i++;
-        var j = i;
-        for (; i < parts.length; i++) {
-          if (parts[i][0] === ATTR_VALUE || parts[i][0] === ATTR_KEY) {
-            if (!cur[1][key]) cur[1][key] = strfn(parts[i][1]);else
-            parts[i][1] === "" || (cur[1][key] = concat(cur[1][key], parts[i][1]));
-          } else if (parts[i][0] === VAR && (
-          parts[i][1] === ATTR_VALUE || parts[i][1] === ATTR_KEY)) {
-            if (!cur[1][key]) cur[1][key] = strfn(parts[i][2]);else
-            parts[i][2] === "" || (cur[1][key] = concat(cur[1][key], parts[i][2]));
-          } else {
-            if (key.length && !cur[1][key] && i === j && (
-            parts[i][0] === CLOSE || parts[i][0] === ATTR_BREAK)) {
-              // https://html.spec.whatwg.org/multipage/infrastructure.html#boolean-attributes
-              // empty string is falsy, not well behaved value in browser
-              cur[1][key] = key.toLowerCase();
-            }
-            if (parts[i][0] === CLOSE) {
-              i--;
-            }
-            break;
-          }
-        }
-      } else if (s === ATTR_KEY) {
-        cur[1][p[1]] = true;
-      } else if (s === VAR && p[1] === ATTR_KEY) {
-        cur[1][p[2]] = true;
-      } else if (s === CLOSE) {
-        if (selfClosing(cur[0]) && stack.length) {
-          var ix = stack[stack.length - 1][1];
-          stack.pop();
-          stack[stack.length - 1][0][2][ix] = h(
-          cur[0], cur[1], cur[2].length ? cur[2] : undefined);
-
-        }
-      } else if (s === VAR && p[1] === TEXT) {
-        if (p[2] === undefined || p[2] === null) p[2] = '';else
-        if (!p[2]) p[2] = concat('', p[2]);
-        if (Array.isArray(p[2][0])) {
-          cur[2].push.apply(cur[2], p[2]);
-        } else {
-          cur[2].push(p[2]);
-        }
-      } else if (s === TEXT) {
-        cur[2].push(p[1]);
-      } else if (s === ATTR_EQ || s === ATTR_BREAK) ;else {
-        throw new Error('unhandled: ' + s);
-      }
-    }
-
-    if (tree[2].length > 1 && /^\s*$/.test(tree[2][0])) {
-      tree[2].shift();
-    }
-
-    if (tree[2].length > 2 ||
-    tree[2].length === 2 && /\S/.test(tree[2][1])) {
-      if (opts.createFragment) return opts.createFragment(tree[2]);
-      throw new Error(
-      'multiple root elements must be wrapped in an enclosing tag');
-
-    }
-    if (Array.isArray(tree[2][0]) && typeof tree[2][0][0] === 'string' &&
-    Array.isArray(tree[2][0][2])) {
-      tree[2][0] = h(tree[2][0][0], tree[2][0][1], tree[2][0][2]);
-    }
-    return tree[2][0];
-
-    function parse(str) {
-      var res = [];
-      if (state === ATTR_VALUE_W) state = ATTR;
-      for (var i = 0; i < str.length; i++) {
-        var c = str.charAt(i);
-        if (state === TEXT && c === '<') {
-          if (reg.length) res.push([TEXT, reg]);
-          reg = '';
-          state = OPEN;
-        } else if (c === '>' && !quot(state) && state !== COMMENT) {
-          if (state === OPEN && reg.length) {
-            res.push([OPEN, reg]);
-          } else if (state === ATTR_KEY) {
-            res.push([ATTR_KEY, reg]);
-          } else if (state === ATTR_VALUE && reg.length) {
-            res.push([ATTR_VALUE, reg]);
-          }
-          res.push([CLOSE]);
-          reg = '';
-          state = TEXT;
-        } else if (state === COMMENT && /-$/.test(reg) && c === '-') {
-          if (opts.comments) {
-            res.push([ATTR_VALUE, reg.substr(0, reg.length - 1)]);
-          }
-          reg = '';
-          state = TEXT;
-        } else if (state === OPEN && /^!--$/.test(reg)) {
-          if (opts.comments) {
-            res.push([OPEN, reg], [ATTR_KEY, 'comment'], [ATTR_EQ]);
-          }
-          reg = c;
-          state = COMMENT;
-        } else if (state === TEXT || state === COMMENT) {
-          reg += c;
-        } else if (state === OPEN && c === '/' && reg.length) ;else if (state === OPEN && /\s/.test(c)) {
-          if (reg.length) {
-            res.push([OPEN, reg]);
-          }
-          reg = '';
-          state = ATTR;
-        } else if (state === OPEN) {
-          reg += c;
-        } else if (state === ATTR && /[^\s"'=/]/.test(c)) {
-          state = ATTR_KEY;
-          reg = c;
-        } else if (state === ATTR && /\s/.test(c)) {
-          if (reg.length) res.push([ATTR_KEY, reg]);
-          res.push([ATTR_BREAK]);
-        } else if (state === ATTR_KEY && /\s/.test(c)) {
-          res.push([ATTR_KEY, reg]);
-          reg = '';
-          state = ATTR_KEY_W;
-        } else if (state === ATTR_KEY && c === '=') {
-          res.push([ATTR_KEY, reg], [ATTR_EQ]);
-          reg = '';
-          state = ATTR_VALUE_W;
-        } else if (state === ATTR_KEY) {
-          reg += c;
-        } else if ((state === ATTR_KEY_W || state === ATTR) && c === '=') {
-          res.push([ATTR_EQ]);
-          state = ATTR_VALUE_W;
-        } else if ((state === ATTR_KEY_W || state === ATTR) && !/\s/.test(c)) {
-          res.push([ATTR_BREAK]);
-          if (/[\w-]/.test(c)) {
-            reg += c;
-            state = ATTR_KEY;
-          } else state = ATTR;
-        } else if (state === ATTR_VALUE_W && c === '"') {
-          state = ATTR_VALUE_DQ;
-        } else if (state === ATTR_VALUE_W && c === "'") {
-          state = ATTR_VALUE_SQ;
-        } else if (state === ATTR_VALUE_DQ && c === '"') {
-          res.push([ATTR_VALUE, reg], [ATTR_BREAK]);
-          reg = '';
-          state = ATTR;
-        } else if (state === ATTR_VALUE_SQ && c === "'") {
-          res.push([ATTR_VALUE, reg], [ATTR_BREAK]);
-          reg = '';
-          state = ATTR;
-        } else if (state === ATTR_VALUE_W && !/\s/.test(c)) {
-          state = ATTR_VALUE;
-          i--;
-        } else if (state === ATTR_VALUE && /\s/.test(c)) {
-          res.push([ATTR_VALUE, reg], [ATTR_BREAK]);
-          reg = '';
-          state = ATTR;
-        } else if (state === ATTR_VALUE || state === ATTR_VALUE_SQ ||
-        state === ATTR_VALUE_DQ) {
-          reg += c;
-        }
-      }
-      if (state === TEXT && reg.length) {
-        res.push([TEXT, reg]);
-        reg = '';
-      } else if (state === ATTR_VALUE && reg.length) {
-        res.push([ATTR_VALUE, reg]);
-        reg = '';
-      } else if (state === ATTR_VALUE_DQ && reg.length) {
-        res.push([ATTR_VALUE, reg]);
-        reg = '';
-      } else if (state === ATTR_VALUE_SQ && reg.length) {
-        res.push([ATTR_VALUE, reg]);
-        reg = '';
-      } else if (state === ATTR_KEY) {
-        res.push([ATTR_KEY, reg]);
-        reg = '';
-      }
-      return res;
-    }
-  };
-
-  function strfn(x) {
-    if (typeof x === 'function') return x;else
-    if (typeof x === 'string') return x;else
-    if (x && typeof x === 'object') return x;else
-    if (x === null || x === undefined) return x;else
-    return concat('', x);
-  }
-};
-
-function quot(state) {
-  return state === ATTR_VALUE_SQ || state === ATTR_VALUE_DQ;
-}
-
-var closeRE = RegExp('^(' + [
-'area', 'base', 'basefont', 'bgsound', 'br', 'col', 'command', 'embed',
-'frame', 'hr', 'img', 'input', 'isindex', 'keygen', 'link', 'meta', 'param',
-'source', 'track', 'wbr', '!--',
-// SVG TAGS
-'animate', 'animateTransform', 'circle', 'cursor', 'desc', 'ellipse',
-'feBlend', 'feColorMatrix', 'feComposite',
-'feConvolveMatrix', 'feDiffuseLighting', 'feDisplacementMap',
-'feDistantLight', 'feFlood', 'feFuncA', 'feFuncB', 'feFuncG', 'feFuncR',
-'feGaussianBlur', 'feImage', 'feMergeNode', 'feMorphology',
-'feOffset', 'fePointLight', 'feSpecularLighting', 'feSpotLight', 'feTile',
-'feTurbulence', 'font-face-format', 'font-face-name', 'font-face-uri',
-'glyph', 'glyphRef', 'hkern', 'image', 'line', 'missing-glyph', 'mpath',
-'path', 'polygon', 'polyline', 'rect', 'set', 'stop', 'tref', 'use', 'view',
-'vkern'].
-join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$');
-function selfClosing(tag) {return closeRE.test(tag);}
-
-function create(modules, options = {}) {
-
-  const directive = options.directive || '@';
-
-  function createElement(sel, input, content) {
-    if (content && content.length) {
-      if (content.length === 1)
-      content = content[0];else
-
-      content = [].concat.apply([], content); // flatten nested arrays
-    }
-
-    // attribute names, and handling none faster:
-    const names = Object.keys(input);
-    if (!names || !names.length)
-    return h(sel, content);
-
-    // parse Snabbdom's `data` from attributes:
-    const data = {};
-    for (let i = 0, max = names.length; max > i; i++) {
-      const name = names[i];
-      if (input[name] === 'false')
-      input[name] = false;
-
-      // directive attributes
-      if (name.indexOf(directive) === 0) {
-        const parts = name.slice(1).split(':');
-        let previous = data;
-        for (let p = 0, pmax = parts.length, last = pmax - 1; p < pmax; p++) {
-          const part = parts[p];
-          if (p === last)
-          previous[part] = input[name];else
-          if (!previous[part])
-          previous = previous[part] = {};else
-
-          previous = previous[part];
-        }
-      }
-
-      // put all other attributes into `data.attrs`
-      else {
-          if (!data.attrs)
-          data.attrs = {};
-          data.attrs[name] = input[name];
-        }
-    }
-
-    // return vnode:
-    return h(sel, data, content);
-  }
-
-  // create the snabbdom + hyperx functions
-  const patch = init(modules || []);
-
-  // create snabby function
-  const snabby = hyperx(createElement, { attrToProp: false });
-
-  // create yo-yo-like update function
-  snabby.update = function update(dest, src) {
-    return patch(dest, src);
-  };
-
-  snabby.thunk = thunk;
-
-  return snabby;
-}
-
-const xlinkNS = 'http://www.w3.org/1999/xlink';
-const xmlNS = 'http://www.w3.org/XML/1998/namespace';
-const colonChar = 58;
-const xChar = 120;
-function updateAttrs(oldVnode, vnode) {
-  var key;
-  var elm = vnode.elm;
-  var oldAttrs = oldVnode.data.attrs;
-  var attrs = vnode.data.attrs;
-  if (!oldAttrs && !attrs)
-  return;
-  if (oldAttrs === attrs)
-  return;
-  oldAttrs = oldAttrs || {};
-  attrs = attrs || {};
-  // update modified attributes, add new attributes
-  for (key in attrs) {
-    const cur = attrs[key];
-    const old = oldAttrs[key];
-    if (old !== cur) {
-      if (cur === true) {
-        elm.setAttribute(key, '');
-      } else
-      if (cur === false) {
-        elm.removeAttribute(key);
-      } else
-      {
-        if (key.charCodeAt(0) !== xChar) {
-          elm.setAttribute(key, cur);
-        } else
-        if (key.charCodeAt(3) === colonChar) {
-          // Assume xml namespace
-          elm.setAttributeNS(xmlNS, key, cur);
-        } else
-        if (key.charCodeAt(5) === colonChar) {
-          // Assume xlink namespace
-          elm.setAttributeNS(xlinkNS, key, cur);
-        } else
-        {
-          elm.setAttribute(key, cur);
-        }
-      }
-    }
-  }
-  // remove removed attributes
-  // use `in` operator since the previous `for` iteration uses it (.i.e. add even attributes with undefined value)
-  // the other option is to remove all attributes with value == undefined
-  for (key in oldAttrs) {
-    if (!(key in attrs)) {
-      elm.removeAttribute(key);
-    }
-  }
-}
-const attributesModule = { create: updateAttrs, update: updateAttrs };
-
-function updateClass(oldVnode, vnode) {
-  var cur;
-  var name;
-  var elm = vnode.elm;
-  var oldClass = oldVnode.data.class;
-  var klass = vnode.data.class;
-  if (!oldClass && !klass)
-  return;
-  if (oldClass === klass)
-  return;
-  oldClass = oldClass || {};
-  klass = klass || {};
-  for (name in oldClass) {
-    if (oldClass[name] &&
-    !Object.prototype.hasOwnProperty.call(klass, name)) {
-      // was `true` and now not provided
-      elm.classList.remove(name);
-    }
-  }
-  for (name in klass) {
-    cur = klass[name];
-    if (cur !== oldClass[name]) {
-      elm.classList[cur ? 'add' : 'remove'](name);
-    }
-  }
-}
-const classModule = { create: updateClass, update: updateClass };
-
-function updateProps(oldVnode, vnode) {
-  var key;
-  var cur;
-  var old;
-  var elm = vnode.elm;
-  var oldProps = oldVnode.data.props;
-  var props = vnode.data.props;
-  if (!oldProps && !props)
-  return;
-  if (oldProps === props)
-  return;
-  oldProps = oldProps || {};
-  props = props || {};
-  for (key in props) {
-    cur = props[key];
-    old = oldProps[key];
-    if (old !== cur && (key !== 'value' || elm[key] !== cur)) {
-      elm[key] = cur;
-    }
-  }
-}
-const propsModule = { create: updateProps, update: updateProps };
-
-// Bindig `requestAnimationFrame` like this fixes a bug in IE/Edge. See #360 and #409.
-var raf = typeof window !== 'undefined' && window.requestAnimationFrame.bind(window) || setTimeout;
-var nextFrame = function (fn) {
-  raf(function () {
-    raf(fn);
-  });
-};
-var reflowForced = false;
-function setNextFrame(obj, prop, val) {
-  nextFrame(function () {
-    obj[prop] = val;
-  });
-}
-function updateStyle(oldVnode, vnode) {
-  var cur;
-  var name;
-  var elm = vnode.elm;
-  var oldStyle = oldVnode.data.style;
-  var style = vnode.data.style;
-  if (!oldStyle && !style)
-  return;
-  if (oldStyle === style)
-  return;
-  oldStyle = oldStyle || {};
-  style = style || {};
-  var oldHasDel = ('delayed' in oldStyle);
-  for (name in oldStyle) {
-    if (!style[name]) {
-      if (name[0] === '-' && name[1] === '-') {
-        elm.style.removeProperty(name);
-      } else
-      {
-        elm.style[name] = '';
-      }
-    }
-  }
-  for (name in style) {
-    cur = style[name];
-    if (name === 'delayed' && style.delayed) {
-      for (const name2 in style.delayed) {
-        cur = style.delayed[name2];
-        if (!oldHasDel || cur !== oldStyle.delayed[name2]) {
-          setNextFrame(elm.style, name2, cur);
-        }
-      }
-    } else
-    if (name !== 'remove' && cur !== oldStyle[name]) {
-      if (name[0] === '-' && name[1] === '-') {
-        elm.style.setProperty(name, cur);
-      } else
-      {
-        elm.style[name] = cur;
-      }
-    }
-  }
-}
-function applyDestroyStyle(vnode) {
-  var style;
-  var name;
-  var elm = vnode.elm;
-  var s = vnode.data.style;
-  if (!s || !(style = s.destroy))
-  return;
-  for (name in style) {
-    elm.style[name] = style[name];
-  }
-}
-function applyRemoveStyle(vnode, rm) {
-  var s = vnode.data.style;
-  if (!s || !s.remove) {
-    rm();
-    return;
-  }
-  if (!reflowForced) {
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    vnode.elm.offsetLeft;
-    reflowForced = true;
-  }
-  var name;
-  var elm = vnode.elm;
-  var i = 0;
-  var compStyle;
-  var style = s.remove;
-  var amount = 0;
-  var applied = [];
-  for (name in style) {
-    applied.push(name);
-    elm.style[name] = style[name];
-  }
-  compStyle = getComputedStyle(elm);
-  var props = compStyle['transition-property'].split(', ');
-  for (; i < props.length; ++i) {
-    if (applied.indexOf(props[i]) !== -1)
-    amount++;
-  }
-  elm.addEventListener('transitionend', function (ev) {
-    if (ev.target === elm)
-    --amount;
-    if (amount === 0)
-    rm();
-  });
-}
-function forceReflow() {
-  reflowForced = false;
-}
-const styleModule = {
-  pre: forceReflow,
-  create: updateStyle,
-  update: updateStyle,
-  destroy: applyDestroyStyle,
-  remove: applyRemoveStyle };
-
-function invokeHandler(handler, vnode, event) {
-  if (typeof handler === 'function') {
-    // call function handler
-    handler.call(vnode, event, vnode);
-  } else
-  if (typeof handler === 'object') {
-    // call multiple handlers
-    for (var i = 0; i < handler.length; i++) {
-      invokeHandler(handler[i], vnode, event);
-    }
-  }
-}
-function handleEvent(event, vnode) {
-  var name = event.type;
-  var on = vnode.data.on;
-  // call event handler(s) if exists
-  if (on && on[name]) {
-    invokeHandler(on[name], vnode, event);
-  }
-}
-function createListener() {
-  return function handler(event) {
-    handleEvent(event, handler.vnode);
-  };
-}
-function updateEventListeners(oldVnode, vnode) {
-  var oldOn = oldVnode.data.on;
-  var oldListener = oldVnode.listener;
-  var oldElm = oldVnode.elm;
-  var on = vnode && vnode.data.on;
-  var elm = vnode && vnode.elm;
-  var name;
-  // optimization for reused immutable handlers
-  if (oldOn === on) {
-    return;
-  }
-  // remove existing listeners which no longer used
-  if (oldOn && oldListener) {
-    // if element changed or deleted we remove all existing listeners unconditionally
-    if (!on) {
-      for (name in oldOn) {
-        // remove listener if element was changed or existing listeners removed
-        oldElm.removeEventListener(name, oldListener, false);
-      }
-    } else
-    {
-      for (name in oldOn) {
-        // remove listener if existing listener removed
-        if (!on[name]) {
-          oldElm.removeEventListener(name, oldListener, false);
-        }
-      }
-    }
-  }
-  // add new listeners which has not already attached
-  if (on) {
-    // reuse existing listener or create new
-    var listener = vnode.listener = oldVnode.listener || createListener();
-    // update vnode for listener
-    listener.vnode = vnode;
-    // if element changed or added we add all needed listeners unconditionally
-    if (!oldOn) {
-      for (name in on) {
-        // add listener if element was changed or new listeners added
-        elm.addEventListener(name, listener, false);
-      }
-    } else
-    {
-      for (name in on) {
-        // add listener if new listener added
-        if (!oldOn[name]) {
-          elm.addEventListener(name, listener, false);
-        }
-      }
-    }
-  }
-}
-const eventListenersModule = {
-  create: updateEventListeners,
-  update: updateEventListeners,
-  destroy: updateEventListeners };
-
-// Inits with common modules out of the box
-
-
-var index = create([
-attributesModule,
-eventListenersModule,
-classModule,
-propsModule,
-styleModule]);
+var fe = typeof global != "undefined" ? global : typeof self != "undefined" ? self : typeof window != "undefined" ? window : {};function G(e, t, r, i, s) {const n = t === void 0 ? void 0 : t.key;return { sel: e, data: t, children: r, text: i, elm: s, key: n };}const ee = Array.isArray;function U(e) {return typeof e == "string" || typeof e == "number";}function xe(e) {return document.createElement(e);}function Re(e, t) {return document.createElementNS(e, t);}function Se(e) {return document.createTextNode(e);}function Me(e) {return document.createComment(e);}function Le(e, t, r) {e.insertBefore(t, r);}function Ce(e, t) {e.removeChild(t);}function Ne(e, t) {e.appendChild(t);}function ke(e) {return e.parentNode;}function ze(e) {return e.nextSibling;}function Pe(e) {return e.tagName;}function je(e, t) {e.textContent = t;}function De(e) {return e.textContent;}function Fe(e) {return e.nodeType === 1;}function Be(e) {return e.nodeType === 3;}function $e(e) {return e.nodeType === 8;}const We = { createElement: xe, createElementNS: Re, createTextNode: Se, createComment: Me, insertBefore: Le, removeChild: Ce, appendChild: Ne, parentNode: ke, nextSibling: ze, tagName: Pe, setTextContent: je, getTextContent: De, isElement: Fe, isText: Be, isComment: $e };function te(e) {return e === void 0;}function L(e) {return e !== void 0;}const le = G("", {}, [], void 0, void 0);function I(e, t) {return e.key === t.key && e.sel === t.sel;}function He(e) {return e.sel !== void 0;}function Ie(e, t, r) {var i;const s = {};for (let n = t; n <= r; ++n) {const o = (i = e[n]) === null || i === void 0 ? void 0 : i.key;o !== void 0 && (s[o] = n);}return s;}const Y = ["create", "update", "remove", "destroy", "pre", "post"];function qe(e, t) {let r, i;const s = { create: [], update: [], remove: [], destroy: [], pre: [], post: [] },n = t !== void 0 ? t : We;for (r = 0; r < Y.length; ++r) for (s[Y[r]] = [], i = 0; i < e.length; ++i) {const a = e[i][Y[r]];a !== void 0 && s[Y[r]].push(a);}function o(a) {const f = a.id ? "#" + a.id : "",l = a.className ? "." + a.className.split(" ").join(".") : "";return G(n.tagName(a).toLowerCase() + f + l, {}, [], void 0, a);}function h(a, f) {return function () {if (--f === 0) {const p = n.parentNode(a);n.removeChild(p, a);}};}function y(a, f) {var l, p;let m,c = a.data;if (c !== void 0) {const g = (l = c.hook) === null || l === void 0 ? void 0 : l.init;L(g) && (g(a), c = a.data);}const _ = a.children,w = a.sel;if (w === "!") te(a.text) && (a.text = ""), a.elm = n.createComment(a.text);else if (w !== void 0) {const g = w.indexOf("#"),O = w.indexOf(".", g),d = g > 0 ? g : w.length,T = O > 0 ? O : w.length,b = g !== -1 || O !== -1 ? w.slice(0, Math.min(d, T)) : w,k = a.elm = L(c) && L(m = c.ns) ? n.createElementNS(m, b) : n.createElement(b);for (d < T && k.setAttribute("id", w.slice(d + 1, T)), O > 0 && k.setAttribute("class", w.slice(T + 1).replace(/\./g, " ")), m = 0; m < s.create.length; ++m) s.create[m](le, a);if (ee(_)) for (m = 0; m < _.length; ++m) {const H = _[m];H != null && n.appendChild(k, y(H, f));} else U(a.text) && n.appendChild(k, n.createTextNode(a.text));const z = a.data.hook;L(z) && ((p = z.create) === null || p === void 0 || p.call(z, le, a), z.insert && f.push(a));} else a.elm = n.createTextNode(a.text);return a.elm;}function v(a, f, l, p, m, c) {for (; p <= m; ++p) {const _ = l[p];_ != null && n.insertBefore(a, y(_, c), f);}}function u(a) {var f, l;const p = a.data;if (p !== void 0) {(l = (f = p == null ? void 0 : p.hook) === null || f === void 0 ? void 0 : f.destroy) === null || l === void 0 || l.call(f, a);for (let m = 0; m < s.destroy.length; ++m) s.destroy[m](a);if (a.children !== void 0) for (let m = 0; m < a.children.length; ++m) {const c = a.children[m];c != null && typeof c != "string" && u(c);}}}function S(a, f, l, p) {for (var m, c; l <= p; ++l) {let _, w;const g = f[l];if (g != null) if (L(g.sel)) {u(g), _ = s.remove.length + 1, w = h(g.elm, _);for (let d = 0; d < s.remove.length; ++d) s.remove[d](g, w);const O = (c = (m = g == null ? void 0 : g.data) === null || m === void 0 ? void 0 : m.hook) === null || c === void 0 ? void 0 : c.remove;L(O) ? O(g, w) : w();} else n.removeChild(a, g.elm);}}function E(a, f, l, p) {let m = 0,c = 0,_ = f.length - 1,w = f[0],g = f[_],O = l.length - 1,d = l[0],T = l[O],b,k,z,H;for (; m <= _ && c <= O;) w == null ? w = f[++m] : g == null ? g = f[--_] : d == null ? d = l[++c] : T == null ? T = l[--O] : I(w, d) ? (A(w, d, p), w = f[++m], d = l[++c]) : I(g, T) ? (A(g, T, p), g = f[--_], T = l[--O]) : I(w, T) ? (A(w, T, p), n.insertBefore(a, w.elm, n.nextSibling(g.elm)), w = f[++m], T = l[--O]) : I(g, d) ? (A(g, d, p), n.insertBefore(a, g.elm, w.elm), g = f[--_], d = l[++c]) : (b === void 0 && (b = Ie(f, m, _)), k = b[d.key], te(k) ? n.insertBefore(a, y(d, p), w.elm) : (z = f[k], z.sel !== d.sel ? n.insertBefore(a, y(d, p), w.elm) : (A(z, d, p), f[k] = void 0, n.insertBefore(a, z.elm, w.elm))), d = l[++c]);(m <= _ || c <= O) && (m > _ ? (H = l[O + 1] == null ? null : l[O + 1].elm, v(a, H, l, c, O, p)) : S(a, f, m, _));}function A(a, f, l) {var p, m, c, _, w;const g = (p = f.data) === null || p === void 0 ? void 0 : p.hook;(m = g == null ? void 0 : g.prepatch) === null || m === void 0 || m.call(g, a, f);const O = f.elm = a.elm,d = a.children,T = f.children;if (a === f) return;if (f.data !== void 0) {for (let b = 0; b < s.update.length; ++b) s.update[b](a, f);(_ = (c = f.data.hook) === null || c === void 0 ? void 0 : c.update) === null || _ === void 0 || _.call(c, a, f);}te(f.text) ? L(d) && L(T) ? d !== T && E(O, d, T, l) : L(T) ? (L(a.text) && n.setTextContent(O, ""), v(O, null, T, 0, T.length - 1, l)) : L(d) ? S(O, d, 0, d.length - 1) : L(a.text) && n.setTextContent(O, "") : a.text !== f.text && (L(d) && S(O, d, 0, d.length - 1), n.setTextContent(O, f.text)), (w = g == null ? void 0 : g.postpatch) === null || w === void 0 || w.call(g, a, f);}return function (f, l) {let p, m, c;const _ = [];for (p = 0; p < s.pre.length; ++p) s.pre[p]();for (He(f) || (f = o(f)), I(f, l) ? A(f, l, _) : (m = f.elm, c = n.parentNode(m), y(l, _), c !== null && (n.insertBefore(c, l.elm, n.nextSibling(m)), S(c, [f], 0, 0))), p = 0; p < _.length; ++p) _[p].data.hook.insert(_[p]);for (p = 0; p < s.post.length; ++p) s.post[p]();return l;};}function ue(e, t, r) {if (e.ns = "http://www.w3.org/2000/svg", r !== "foreignObject" && t !== void 0) for (let i = 0; i < t.length; ++i) {const s = t[i].data;s !== void 0 && ue(s, t[i].children, t[i].sel);}}function J(e, t, r) {var i = {},s,n,o;if (r !== void 0 ? (t !== null && (i = t), ee(r) ? s = r : U(r) ? n = r : r && r.sel && (s = [r])) : t != null && (ee(t) ? s = t : U(t) ? n = t : t && t.sel ? s = [t] : i = t), s !== void 0) for (o = 0; o < s.length; ++o) U(s[o]) && (s[o] = G(void 0, void 0, void 0, s[o], void 0));return e[0] === "s" && e[1] === "v" && e[2] === "g" && (e.length === 3 || e[3] === "." || e[3] === "#") && ue(i, s, e), G(e, i, s, n, void 0);}function K(e, t) {e.data.fn = t.data.fn, e.data.args = t.data.args, t.data = e.data, t.children = e.children, t.text = e.text, t.elm = e.elm;}function Ge(e) {const t = e.data,r = t.fn.apply(void 0, t.args);K(r, e);}function Ue(e, t) {let r;const i = e.data,s = t.data,n = i.args,o = s.args;if (i.fn !== s.fn || n.length !== o.length) {K(s.fn.apply(void 0, o), t);return;}for (r = 0; r < o.length; ++r) if (n[r] !== o[r]) {K(s.fn.apply(void 0, o), t);return;}K(e, t);}const Ye = function (t, r, i, s) {return s === void 0 && (s = i, i = r, r = void 0), J(t, { key: r, hook: { init: Ge, prepatch: Ue }, fn: i, args: s });};var Je = Ke,ce = { class: "className", for: "htmlFor", "http-equiv": "httpEquiv" };function Ke(e) {return function (t, r, i) {for (var s in r) s in ce && (r[ce[s]] = r[s], delete r[s]);return e(t, r, i);};}var D = 0,N = 1,M = 2,X = 3,C = 4,x = 5,ne = 6,P = 7,R = 8,F = 9,B = 10,q = 11,j = 12,$ = 13,Xe = function (e, t) {t || (t = {});var r = t.concat || function (s, n) {return String(s) + String(n);};return t.attrToProp !== !1 && (e = Je(e)), function (s) {for (var n = N, o = "", h = !1, y = arguments.length, v = [], u = 0; u < s.length; u++) if (u < y - 1) {var S = arguments[u + 1],E = g(s[u]),A = n;A === B && (A = R), A === F && (A = R), A === P && (A = R), A === C && (A = x), A === M ? o === "/" ? (E.push([M, "/", S]), o = "") : E.push([M, S]) : A === $ && t.comments ? o += String(S) : A !== $ && E.push([D, A, S]), v.push.apply(v, E);} else v.push.apply(v, g(s[u]));for (var a = [null, {}, []], f = [[a, -1]], u = 0; u < v.length; u++) {var l = f[f.length - 1][0],E = v[u],n = E[0];if (n === M && /^\//.test(E[1])) {var p = f[f.length - 1][1];f.length > 1 && (f.pop(), f[f.length - 1][0][2][p] = e(l[0], l[1], l[2].length ? l[2] : void 0));} else if (n === M) {var m = [E[1], {}, []];l[2].push(m), f.push([m, l[2].length - 1]);} else if (n === x || n === D && E[1] === x) {for (var c = "", _; u < v.length; u++) if (v[u][0] === x) c = r(c, v[u][1]);else if (v[u][0] === D && v[u][1] === x) {if (typeof v[u][2] == "object" && !c) for (_ in v[u][2]) v[u][2].hasOwnProperty(_) && !l[1][_] && (l[1][_] = v[u][2][_]);else c = r(c, v[u][2]);} else break;v[u][0] === q && u++;for (var w = u; u < v.length; u++) if (v[u][0] === R || v[u][0] === x) l[1][c] ? v[u][1] === "" || (l[1][c] = r(l[1][c], v[u][1])) : l[1][c] = i(v[u][1]);else if (v[u][0] === D && (v[u][1] === R || v[u][1] === x)) l[1][c] ? v[u][2] === "" || (l[1][c] = r(l[1][c], v[u][2])) : l[1][c] = i(v[u][2]);else {c.length && !l[1][c] && u === w && (v[u][0] === X || v[u][0] === j) && (l[1][c] = c.toLowerCase()), v[u][0] === X && u--;break;}} else if (n === x) l[1][E[1]] = !0;else if (n === D && E[1] === x) l[1][E[2]] = !0;else if (n === X) {const b = E[1] || Ve(l[0]);if (b && f.length) {var p = f[f.length - 1][1];f.pop(), f[f.length - 1][0][2][p] = e(l[0], l[1], l[2].length ? l[2] : void 0);}} else if (n === D && E[1] === N) E[2] === void 0 || E[2] === null ? E[2] = "" : E[2] || (E[2] = r("", E[2])), Array.isArray(E[2][0]) ? l[2].push.apply(l[2], E[2]) : l[2].push(E[2]);else if (n === N) l[2].push(E[1]);else if (!(n === q || n === j)) throw new Error("unhandled: " + n);}if (a[2].length > 1 && /^\s*$/.test(a[2][0]) && a[2].shift(), a[2].length > 2 || a[2].length === 2 && /\S/.test(a[2][1])) {if (t.createFragment) return t.createFragment(a[2]);throw new Error("multiple root elements must be wrapped in an enclosing tag");}return Array.isArray(a[2][0]) && typeof a[2][0][0] == "string" && Array.isArray(a[2][0][2]) && (a[2][0] = e(a[2][0][0], a[2][0][1], a[2][0][2])), a[2][0];function g(O) {var d = [];n === P && (n = C);for (var T = 0; T < O.length; T++) {var b = O.charAt(T);n === N && b === "<" ? (o.length && d.push([N, o]), o = "", n = M) : b === ">" && !Ze(n) && n !== $ ? (n === M && o.length ? d.push([M, o]) : n === x ? d.push([x, o]) : n === R && o.length && d.push([R, o]), d.push([X, h]), h = !1, o = "", n = N) : n === $ && /-$/.test(o) && b === "-" ? (t.comments && d.push([R, o.substr(0, o.length - 1)]), o = "", h = !0, n = N) : n === M && /^!--$/.test(o) ? (t.comments && d.push([M, o], [x, "comment"], [q]), o = b, n = $) : n === N || n === $ ? o += b : n === M && b === "/" && o.length ? h = !0 : n === M && /\s/.test(b) ? (o.length && d.push([M, o]), o = "", n = C) : n === M ? o += b : n === C && /[^\s"'=/]/.test(b) ? (n = x, o = b) : n === C && /\s/.test(b) ? (o.length && d.push([x, o]), d.push([j])) : n === x && /\s/.test(b) ? (d.push([x, o]), o = "", n = ne) : n === x && b === "=" ? (d.push([x, o], [q]), o = "", n = P) : n === x && b === "/" ? (h = !0, o = "", n = C) : n === x ? o += b : (n === ne || n === C) && b === "=" ? (d.push([q]), n = P) : (n === ne || n === C) && !/\s/.test(b) ? (d.push([j]), /[\w-]/.test(b) ? (o += b, n = x) : b === "/" ? h = !0 : n = C) : n === P && b === '"' ? n = B : n === P && b === "'" ? n = F : n === B && b === '"' ? (d.push([R, o], [j]), o = "", n = C) : n === F && b === "'" ? (d.push([R, o], [j]), o = "", n = C) : n === P && !/\s/.test(b) ? (n = R, T--) : n === R && /\s/.test(b) ? (d.push([R, o], [j]), o = "", n = C) : (n === R || n === F || n === B) && (o += b);}return n === N && o.length ? (d.push([N, o]), o = "") : n === R && o.length ? (d.push([R, o]), o = "") : n === B && o.length ? (d.push([R, o]), o = "") : n === F && o.length ? (d.push([R, o]), o = "") : n === x && (d.push([x, o]), o = ""), d;}};function i(s) {return typeof s == "function" || typeof s == "string" || s && typeof s == "object" || s == null ? s : r("", s);}};function Ze(e) {return e === F || e === B;}var Qe = RegExp("^(" + ["area", "base", "br", "col", "command", "embed", "hr", "img", "input", "keygen", "link", "meta", "param", "source", "track", "wbr"].join("|") + ")(?:[.#][a-zA-Z0-9\x7F-\uFFFF_:-]+)*$");function Ve(e) {return Qe.test(e);}function et(e, t = {}) {const r = t.directive || "@";function i(o, h, y) {if (o === "!--") return J("!", h.comment);y && y.length && (y.length === 1 ? y = y[0] : y = [].concat.apply([], y));const v = Object.keys(h);if (!v || !v.length) return J(o, y);const u = {};for (let S = 0, E = v.length; E > S; S++) {const A = v[S];if (h[A] === "false" && (h[A] = !1), A.indexOf(r) === 0) {const a = A.slice(1).split(":");let f = u;for (let l = 0, p = a.length, m = p - 1; l < p; l++) {const c = a[l];l === m ? f[c] = h[A] : f[c] ? f = f[c] : f = f[c] = {};}} else u.attrs || (u.attrs = {}), u.attrs[A] = h[A];}return J(o, u, y);}const s = qe(e || []),n = Xe(i, { comments: !0, attrToProp: !1 });return n.update = function (h, y) {return s(h, y);}, n.thunk = Ye, n;}const tt = "http://www.w3.org/1999/xlink",nt = "http://www.w3.org/XML/1998/namespace",de = 58,rt = 120;function he(e, t) {var r,i = t.elm,s = e.data.attrs,n = t.data.attrs;if (!s && !n) return;if (s === n) return;s = s || {}, n = n || {};for (r in n) {const o = n[r],h = s[r];h !== o && (o === !0 ? i.setAttribute(r, "") : o === !1 ? i.removeAttribute(r) : r.charCodeAt(0) !== rt ? i.setAttribute(r, o) : r.charCodeAt(3) === de ? i.setAttributeNS(nt, r, o) : r.charCodeAt(5) === de ? i.setAttributeNS(tt, r, o) : i.setAttribute(r, o));}for (r in s) r in n || i.removeAttribute(r);}const it = { create: he, update: he };function pe(e, t) {var r,i,s = t.elm,n = e.data.class,o = t.data.class;if (!n && !o) return;if (n === o) return;n = n || {}, o = o || {};for (i in n) n[i] && !Object.prototype.hasOwnProperty.call(o, i) && s.classList.remove(i);for (i in o) r = o[i], r !== n[i] && s.classList[r ? "add" : "remove"](i);}const st = { create: pe, update: pe };function ve(e, t) {var r,i,s,n = t.elm,o = e.data.props,h = t.data.props;if (!o && !h) return;if (o === h) return;o = o || {}, h = h || {};for (r in h) i = h[r], s = o[r], s !== i && (r !== "value" || n[r] !== i) && (n[r] = i);}const ot = { create: ve, update: ve };var me = typeof window != "undefined" && window.requestAnimationFrame.bind(window) || setTimeout,at = function (e) {me(function () {me(e);});},re = !1;function ft(e, t, r) {at(function () {e[t] = r;});}function ge(e, t) {var r,i,s = t.elm,n = e.data.style,o = t.data.style;if (!n && !o) return;if (n === o) return;n = n || {}, o = o || {};var h = ("delayed" in n);for (i in n) o[i] || (i[0] === "-" && i[1] === "-" ? s.style.removeProperty(i) : s.style[i] = "");for (i in o) if (r = o[i], i === "delayed" && o.delayed) for (const y in o.delayed) r = o.delayed[y], (!h || r !== n.delayed[y]) && ft(s.style, y, r);else i !== "remove" && r !== n[i] && (i[0] === "-" && i[1] === "-" ? s.style.setProperty(i, r) : s.style[i] = r);}function lt(e) {var t,r,i = e.elm,s = e.data.style;if (!s || !(t = s.destroy)) return;for (r in t) i.style[r] = t[r];}function ut(e, t) {var r = e.data.style;if (!r || !r.remove) {t();return;}re || (e.elm.offsetLeft, re = !0);var i,s = e.elm,n = 0,o,h = r.remove,y = 0,v = [];for (i in h) v.push(i), s.style[i] = h[i];o = getComputedStyle(s);for (var u = o["transition-property"].split(", "); n < u.length; ++n) v.indexOf(u[n]) !== -1 && y++;s.addEventListener("transitionend", function (S) {S.target === s && --y, y === 0 && t();});}function ct() {re = !1;}const dt = { pre: ct, create: ge, update: ge, destroy: lt, remove: ut };function ye(e, t, r) {if (typeof e == "function") e.call(t, r, t);else if (typeof e == "object") for (var i = 0; i < e.length; i++) ye(e[i], t, r);}function ht(e, t) {var r = e.type,i = t.data.on;i && i[r] && ye(i[r], t, e);}function pt() {return function e(t) {ht(t, e.vnode);};}function ie(e, t) {var r = e.data.on,i = e.listener,s = e.elm,n = t && t.data.on,o = t && t.elm,h;if (r === n) return;if (r && i) if (n) for (h in r) n[h] || s.removeEventListener(h, i, !1);else for (h in r) s.removeEventListener(h, i, !1);if (n) {var y = t.listener = e.listener || pt();if (y.vnode = t, r) for (h in n) r[h] || o.addEventListener(h, y, !1);else for (h in n) o.addEventListener(h, y, !1);}}const vt = { create: ie, update: ie, destroy: ie };var se = typeof fe != "undefined" ? fe : typeof self != "undefined" ? self : typeof window != "undefined" ? window : {},be = function () {if (typeof Map != "undefined") return Map;function e(t, r) {var i = -1;return t.some(function (s, n) {return s[0] === r ? (i = n, !0) : !1;}), i;}return function () {function t() {this.__entries__ = [];}return Object.defineProperty(t.prototype, "size", { get: function () {return this.__entries__.length;}, enumerable: !0, configurable: !0 }), t.prototype.get = function (r) {var i = e(this.__entries__, r),s = this.__entries__[i];return s && s[1];}, t.prototype.set = function (r, i) {var s = e(this.__entries__, r);~s ? this.__entries__[s][1] = i : this.__entries__.push([r, i]);}, t.prototype.delete = function (r) {var i = this.__entries__,s = e(i, r);~s && i.splice(s, 1);}, t.prototype.has = function (r) {return !!~e(this.__entries__, r);}, t.prototype.clear = function () {this.__entries__.splice(0);}, t.prototype.forEach = function (r, i) {i === void 0 && (i = null);for (var s = 0, n = this.__entries__; s < n.length; s++) {var o = n[s];r.call(i, o[1], o[0]);}}, t;}();}(),oe = typeof window != "undefined" && typeof document != "undefined" && window.document === document,Z = function () {return typeof se != "undefined" && se.Math === Math ? se : typeof self != "undefined" && self.Math === Math ? self : typeof window != "undefined" && window.Math === Math ? window : Function("return this")();}(),mt = function () {return typeof requestAnimationFrame == "function" ? requestAnimationFrame.bind(Z) : function (e) {return setTimeout(function () {return e(Date.now());}, 1e3 / 60);};}(),gt = 2;function yt(e, t) {var r = !1,i = !1,s = 0;function n() {r && (r = !1, e()), i && h();}function o() {mt(n);}function h() {var y = Date.now();if (r) {if (y - s < gt) return;i = !0;} else r = !0, i = !1, setTimeout(o, t);s = y;}return h;}var bt = 20,_t = ["top", "right", "bottom", "left", "width", "height", "size", "weight"],wt = typeof MutationObserver != "undefined",Et = function () {function e() {this.connected_ = !1, this.mutationEventsAdded_ = !1, this.mutationsObserver_ = null, this.observers_ = [], this.onTransitionEnd_ = this.onTransitionEnd_.bind(this), this.refresh = yt(this.refresh.bind(this), bt);}return e.prototype.addObserver = function (t) {~this.observers_.indexOf(t) || this.observers_.push(t), this.connected_ || this.connect_();}, e.prototype.removeObserver = function (t) {var r = this.observers_,i = r.indexOf(t);~i && r.splice(i, 1), !r.length && this.connected_ && this.disconnect_();}, e.prototype.refresh = function () {var t = this.updateObservers_();t && this.refresh();}, e.prototype.updateObservers_ = function () {var t = this.observers_.filter(function (r) {return r.gatherActive(), r.hasActive();});return t.forEach(function (r) {return r.broadcastActive();}), t.length > 0;}, e.prototype.connect_ = function () {if (!oe || this.connected_) return;document.addEventListener("transitionend", this.onTransitionEnd_), window.addEventListener("resize", this.refresh), wt ? (this.mutationsObserver_ = new MutationObserver(this.refresh), this.mutationsObserver_.observe(document, { attributes: !0, childList: !0, characterData: !0, subtree: !0 })) : (document.addEventListener("DOMSubtreeModified", this.refresh), this.mutationEventsAdded_ = !0), this.connected_ = !0;}, e.prototype.disconnect_ = function () {if (!oe || !this.connected_) return;document.removeEventListener("transitionend", this.onTransitionEnd_), window.removeEventListener("resize", this.refresh), this.mutationsObserver_ && this.mutationsObserver_.disconnect(), this.mutationEventsAdded_ && document.removeEventListener("DOMSubtreeModified", this.refresh), this.mutationsObserver_ = null, this.mutationEventsAdded_ = !1, this.connected_ = !1;}, e.prototype.onTransitionEnd_ = function (t) {var r = t.propertyName,i = r === void 0 ? "" : r,s = _t.some(function (n) {return !!~i.indexOf(n);});s && this.refresh();}, e.getInstance = function () {return this.instance_ || (this.instance_ = new e()), this.instance_;}, e.instance_ = null, e;}(),_e = function (e, t) {for (var r = 0, i = Object.keys(t); r < i.length; r++) {var s = i[r];Object.defineProperty(e, s, { value: t[s], enumerable: !1, writable: !1, configurable: !0 });}return e;},W = function (e) {var t = e && e.ownerDocument && e.ownerDocument.defaultView;return t || Z;},we = V(0, 0, 0, 0);function Q(e) {return parseFloat(e) || 0;}function Ee(e) {for (var t = [], r = 1; r < arguments.length; r++) t[r - 1] = arguments[r];return t.reduce(function (i, s) {var n = e["border-" + s + "-width"];return i + Q(n);}, 0);}function Ot(e) {for (var t = ["top", "right", "bottom", "left"], r = {}, i = 0, s = t; i < s.length; i++) {var n = s[i],o = e["padding-" + n];r[n] = Q(o);}return r;}function At(e) {var t = e.getBBox();return V(0, 0, t.width, t.height);}function Tt(e) {var t = e.clientWidth,r = e.clientHeight;if (!t && !r) return we;var i = W(e).getComputedStyle(e),s = Ot(i),n = s.left + s.right,o = s.top + s.bottom,h = Q(i.width),y = Q(i.height);if (i.boxSizing === "border-box" && (Math.round(h + n) !== t && (h -= Ee(i, "left", "right") + n), Math.round(y + o) !== r && (y -= Ee(i, "top", "bottom") + o)), !Rt(e)) {var v = Math.round(h + n) - t,u = Math.round(y + o) - r;Math.abs(v) !== 1 && (h -= v), Math.abs(u) !== 1 && (y -= u);}return V(s.left, s.top, h, y);}var xt = function () {return typeof SVGGraphicsElement != "undefined" ? function (e) {return e instanceof W(e).SVGGraphicsElement;} : function (e) {return e instanceof W(e).SVGElement && typeof e.getBBox == "function";};}();function Rt(e) {return e === W(e).document.documentElement;}function St(e) {return oe ? xt(e) ? At(e) : Tt(e) : we;}function Mt(e) {var t = e.x,r = e.y,i = e.width,s = e.height,n = typeof DOMRectReadOnly != "undefined" ? DOMRectReadOnly : Object,o = Object.create(n.prototype);return _e(o, { x: t, y: r, width: i, height: s, top: r, right: t + i, bottom: s + r, left: t }), o;}function V(e, t, r, i) {return { x: e, y: t, width: r, height: i };}var Lt = function () {function e(t) {this.broadcastWidth = 0, this.broadcastHeight = 0, this.contentRect_ = V(0, 0, 0, 0), this.target = t;}return e.prototype.isActive = function () {var t = St(this.target);return this.contentRect_ = t, t.width !== this.broadcastWidth || t.height !== this.broadcastHeight;}, e.prototype.broadcastRect = function () {var t = this.contentRect_;return this.broadcastWidth = t.width, this.broadcastHeight = t.height, t;}, e;}(),Ct = function () {function e(t, r) {var i = Mt(r);_e(this, { target: t, contentRect: i });}return e;}(),Nt = function () {function e(t, r, i) {if (this.activeObservations_ = [], this.observations_ = new be(), typeof t != "function") throw new TypeError("The callback provided as parameter 1 is not a function.");this.callback_ = t, this.controller_ = r, this.callbackCtx_ = i;}return e.prototype.observe = function (t) {if (!arguments.length) throw new TypeError("1 argument required, but only 0 present.");if (typeof Element == "undefined" || !(Element instanceof Object)) return;if (!(t instanceof W(t).Element)) throw new TypeError('parameter 1 is not of type "Element".');var r = this.observations_;if (r.has(t)) return;r.set(t, new Lt(t)), this.controller_.addObserver(this), this.controller_.refresh();}, e.prototype.unobserve = function (t) {if (!arguments.length) throw new TypeError("1 argument required, but only 0 present.");if (typeof Element == "undefined" || !(Element instanceof Object)) return;if (!(t instanceof W(t).Element)) throw new TypeError('parameter 1 is not of type "Element".');var r = this.observations_;if (!r.has(t)) return;r.delete(t), r.size || this.controller_.removeObserver(this);}, e.prototype.disconnect = function () {this.clearActive(), this.observations_.clear(), this.controller_.removeObserver(this);}, e.prototype.gatherActive = function () {var t = this;this.clearActive(), this.observations_.forEach(function (r) {r.isActive() && t.activeObservations_.push(r);});}, e.prototype.broadcastActive = function () {if (!this.hasActive()) return;var t = this.callbackCtx_,r = this.activeObservations_.map(function (i) {return new Ct(i.target, i.broadcastRect());});this.callback_.call(t, r, t), this.clearActive();}, e.prototype.clearActive = function () {this.activeObservations_.splice(0);}, e.prototype.hasActive = function () {return this.activeObservations_.length > 0;}, e;}(),Oe = typeof WeakMap != "undefined" ? new WeakMap() : new be(),Ae = function () {function e(t) {if (!(this instanceof e)) throw new TypeError("Cannot call a class as a function.");if (!arguments.length) throw new TypeError("1 argument required, but only 0 present.");var r = Et.getInstance(),i = new Nt(t, r, this);Oe.set(this, i);}return e;}();["observe", "unobserve", "disconnect"].forEach(function (e) {Ae.prototype[e] = function () {var t;return (t = Oe.get(this))[e].apply(t, arguments);};});var kt = function () {return typeof Z.ResizeObserver != "undefined" ? Z.ResizeObserver : Ae;}();const ae = new kt(function (e) {for (const t of e) {const r = JSON.parse(t.target.dataset.breakpoints);let i = 0,s = "";for (const n of Object.keys(r)) {const o = r[n];t.contentRect.width >= o && o > i && (s = n, i = o);}for (const n of Object.keys(r)) n === s ? t.target.classList.contains(n) || t.target.classList.add(n) : t.target.classList.contains(n) && t.target.classList.remove(n);}});function Te(e, t) {if (t.elm.dataset && t.elm.dataset.breakpoints) try {JSON.parse(t.elm.dataset.breakpoints), ae.observe(t.elm);} catch (r) {} else t.elm instanceof Element && ae.unobserve(t.elm);}function zt(e) {ae.unobserve(e.elm);}var Pt = { create: Te, update: Te, destroy: zt },jt = et([it, vt, st, ot, dt, Pt]);
 
 function lerp(a, b, t) {
   return a + (b - a) * t;
@@ -1353,10 +176,10 @@ function toNumber(value) {
 var lodash_throttle = throttle;
 
 const DOT_WIDTH = 4;
-const FPS = 60;
+const FPS$1 = 60;
 
 
-function getTimePeriodData (graph) {
+function getTimePeriodData$1 (graph) {
     return graph.data.filter((dataPoint) => {
         // if data is outside of the time range skip it
         if (dataPoint.t < graph.timeRange.start)
@@ -1370,7 +193,7 @@ function getTimePeriodData (graph) {
 }
 
 
-function getGraphMetrics (model, graph) {
+function getGraphMetrics$1 (model, graph) {
     let leftMargin = 10;
     const rightMargin = 10;
     let bottomMargin = graph.renderTicks ? 20 : 0;
@@ -1387,11 +210,11 @@ function getGraphMetrics (model, graph) {
 }
 
 
-function verticalGridLinesMinor (model, graph, update) {
+function verticalGridLinesMinor$1 (model, graph, update) {
     if (!graph.gridLines || !graph.gridLines.vertical)
         return
 
-    const m = getGraphMetrics(model, graph);
+    const m = getGraphMetrics$1(model, graph);
     const pixelsPerTick = 6;
     const pixelsPerMinorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMinor;
     const { ctx } = graph;
@@ -1411,11 +234,11 @@ function verticalGridLinesMinor (model, graph, update) {
 }
 
 
-function verticalGridLinesMajor (model, graph, update) {
+function verticalGridLinesMajor$1 (model, graph, update) {
     if (!graph.gridLines || !graph.gridLines.vertical)
         return
 
-    const m = getGraphMetrics(model, graph);
+    const m = getGraphMetrics$1(model, graph);
 
     const pixelsPerTick = 6;
     const pixelsPerMajorLine = pixelsPerTick * graph.gridLines.vertical.ticksPerMajor;
@@ -1438,11 +261,11 @@ function verticalGridLinesMajor (model, graph, update) {
 }
 
 
-function gridLines (model, graph, update) {
+function gridLines$1 (model, graph, update) {
     if (!graph.gridLines || !graph.gridLines.horizontal)
         return
 
-    const m = getGraphMetrics(model, graph);
+    const m = getGraphMetrics$1(model, graph);
 
     const { ctx } = graph;
     ctx.lineWidth = 0.5; //strokeWidth
@@ -1463,9 +286,9 @@ function gridLines (model, graph, update) {
 }
 
 
-function renderLinePlotGraph (model, graph, dotWidth) {
-    const tp = getTimePeriodData(graph);
-    const m = getGraphMetrics(model, graph);
+function renderLinePlotGraph$1 (model, graph, dotWidth) {
+    const tp = getTimePeriodData$1(graph);
+    const m = getGraphMetrics$1(model, graph);
 
     const { ctx } = graph;
     let lastX, lastY;
@@ -1522,9 +345,9 @@ function renderLinePlotGraph (model, graph, dotWidth) {
 }
 
 
-function renderScatterPlotGraph (model, graph, dotWidth) {
-    const tp = getTimePeriodData(graph);
-    const m = getGraphMetrics(model, graph);
+function renderScatterPlotGraph$1 (model, graph, dotWidth) {
+    const tp = getTimePeriodData$1(graph);
+    const m = getGraphMetrics$1(model, graph);
 
     const { ctx } = graph;
 
@@ -1542,10 +365,10 @@ function renderScatterPlotGraph (model, graph, dotWidth) {
 }
 
 
-function graphComponent (model, graph, update) {
+function graphComponent$1 (model, graph, update) {
 
     const dotWidth = 4;
-    const m = getGraphMetrics(model, graph);
+    const m = getGraphMetrics$1(model, graph);
 
     // TODO: change mouse cursor to ew-resize when hovering over a drag handle
 
@@ -1577,7 +400,7 @@ function graphComponent (model, graph, update) {
         }
 
         update();
-    }, 1000 / FPS);
+    }, 1000 / FPS$1);
 
     const _mouseUp = function (ev) {
         graph.selection.dragging = undefined;
@@ -1604,7 +427,7 @@ function graphComponent (model, graph, update) {
                 draggingType = 'end';
             }
         } else if (graph.selection?.type === 'value') {
-            const m = getGraphMetrics(model, graph);
+            const m = getGraphMetrics$1(model, graph);
             if (ev.offsetY >= m.graphHeight + 10)
                 draggingType = 'time';
         }
@@ -1625,9 +448,9 @@ function graphComponent (model, graph, update) {
 
     if (graph.ctx) {
         graph.ctx.clearRect(0, 0, model.elm.width, model.elm.height);
-        verticalGridLinesMinor(model, graph);
-        verticalGridLinesMajor(model, graph);
-        gridLines(model, graph);
+        verticalGridLinesMinor$1(model, graph);
+        verticalGridLinesMajor$1(model, graph);
+        gridLines$1(model, graph);
 
 
         // draw the bottom line of the graph
@@ -1640,23 +463,23 @@ function graphComponent (model, graph, update) {
 
 
         if (graph.renderTicks) {
-            tickMarksComponent(model, graph);
-            tickLabelsComponent(model, graph);
+            tickMarksComponent$1(model, graph);
+            tickLabelsComponent$1(model, graph);
         }
 
         graph.ctx.strokeStyle = graph.dataColor;
         if (graph.type === 'scatterPlot')
-            renderScatterPlotGraph(model, graph, dotWidth);
+            renderScatterPlotGraph$1(model, graph, dotWidth);
         else
-            renderLinePlotGraph(model, graph, dotWidth);
-        timeSelectionComponent(model, graph);
-        renderLabelComponent(model, graph);
+            renderLinePlotGraph$1(model, graph, dotWidth);
+        timeSelectionComponent$1(model, graph);
+        renderLabelComponent$1(model, graph);
     }
 
     if (!graph.key)
         graph.key = 'u' + Math.floor(Math.random() * 9999999);
 
-    return index`<canvas width="${model.width}"
+    return jt`<canvas width="${model.width}"
                         height="${graph.height}"
                         @hook:insert=${_insertHook}
                         @key=${graph.key}
@@ -1666,9 +489,9 @@ function graphComponent (model, graph, update) {
 }
 
 
-function renderLabelComponent (model, graph, update) {
+function renderLabelComponent$1 (model, graph, update) {
     const { ctx } = graph;
-    const m = getGraphMetrics(model, graph);
+    const m = getGraphMetrics$1(model, graph);
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
 
     if (graph.renderValueLabel && graph.selection.type === 'value') {
@@ -1683,9 +506,9 @@ function renderLabelComponent (model, graph, update) {
 }
 
 
-function tickMarksComponent (model, graph, update) {
+function tickMarksComponent$1 (model, graph, update) {
 
-    const m = getGraphMetrics(model, graph);
+    const m = getGraphMetrics$1(model, graph);
 
     const { ctx } = graph;
 
@@ -1707,8 +530,8 @@ function tickMarksComponent (model, graph, update) {
 }
 
 
-function tickLabelsComponent (model, graph, update) {
-    const m = getGraphMetrics(model, graph);
+function tickLabelsComponent$1 (model, graph, update) {
+    const m = getGraphMetrics$1(model, graph);
 
     const timePeriod = (graph.timeRange.end - graph.timeRange.start);
 
@@ -1738,17 +561,17 @@ function tickLabelsComponent (model, graph, update) {
 }
 
 
-function timeSelectionComponent (model, graph, update) {
+function timeSelectionComponent$1 (model, graph, update) {
     if (graph.selection.type === 'range')
-        timeRangeSelectionComponent(model, graph);
+        timeRangeSelectionComponent$1(model, graph);
 
     if (graph.selection.type === 'value')
-        timeValueSelectionComponent(model, graph);
+        timeValueSelectionComponent$1(model, graph);
 }
 
 
-function timeRangeSelectionComponent (model, graph, update) {
-    const m = getGraphMetrics(model, graph);
+function timeRangeSelectionComponent$1 (model, graph, update) {
+    const m = getGraphMetrics$1(model, graph);
     const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, graph.selection.start);
     const endX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, graph.selection.end);
 
@@ -1813,8 +636,8 @@ function renderDragHandle (ctx, startX, startY, path) {
 }
 
 
-function timeValueSelectionComponent (model, graph, update) {
-    const m = getGraphMetrics(model, graph);
+function timeValueSelectionComponent$1 (model, graph, update) {
+    const m = getGraphMetrics$1(model, graph);
 
     const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, graph.selection.time);
 
@@ -1843,7 +666,7 @@ function timeValueSelectionComponent (model, graph, update) {
 }
 
 
-function timelineComponent (model, update) {
+function timelineComponent$2 (model, update) {
     const _insertHook = function (vnode) {
         model.container = vnode;
     };
@@ -1851,36 +674,36 @@ function timelineComponent (model, update) {
     if (model.container)
         model.width = model.container.elm ? model.container.elm.offsetWidth : model.container.offsetWidth;
 
-    return index`
+    return jt`
         <div class="graph-stack"
              @hook:insert=${_insertHook}
              style="width: 100%; display: grid; grid-template-columns: 1fr; border: ${model.border || 'none'};">
-            ${model.graphs.map((g) => graphComponent(model, g, update))}
+            ${model.graphs.map((g) => graphComponent$1(model, g, update))}
         </div>`
 }
 
-function vnode$1(sel, data, children, text, elm) {
+function vnode(sel, data, children, text, elm) {
   const key = data === undefined ? undefined : data.key;
   return { sel, data, children, text, elm, key };
 }
 
-const array$1 = Array.isArray;
-function primitive$1(s) {
+const array = Array.isArray;
+function primitive(s) {
   return typeof s === 'string' || typeof s === 'number';
 }
 
-function addNS$1(data, children, sel) {
+function addNS(data, children, sel) {
   data.ns = 'http://www.w3.org/2000/svg';
   if (sel !== 'foreignObject' && children !== undefined) {
     for (let i = 0; i < children.length; ++i) {
       const childData = children[i].data;
       if (childData !== undefined) {
-        addNS$1(childData, children[i].children, children[i].sel);
+        addNS(childData, children[i].children, children[i].sel);
       }
     }
   }
 }
-function h$1(sel, b, c) {
+function h(sel, b, c) {
   var data = {};
   var children;
   var text;
@@ -1889,10 +712,10 @@ function h$1(sel, b, c) {
     if (b !== null) {
       data = b;
     }
-    if (array$1(c)) {
+    if (array(c)) {
       children = c;
     } else
-    if (primitive$1(c)) {
+    if (primitive(c)) {
       text = c;
     } else
     if (c && c.sel) {
@@ -1900,10 +723,10 @@ function h$1(sel, b, c) {
     }
   } else
   if (b !== undefined && b !== null) {
-    if (array$1(b)) {
+    if (array(b)) {
       children = b;
     } else
-    if (primitive$1(b)) {
+    if (primitive(b)) {
       text = b;
     } else
     if (b && b.sel) {
@@ -1915,21 +738,21 @@ function h$1(sel, b, c) {
   }
   if (children !== undefined) {
     for (i = 0; i < children.length; ++i) {
-      if (primitive$1(children[i]))
-      children[i] = vnode$1(undefined, undefined, undefined, children[i], undefined);
+      if (primitive(children[i]))
+      children[i] = vnode(undefined, undefined, undefined, children[i], undefined);
     }
   }
   if (sel[0] === 's' && sel[1] === 'v' && sel[2] === 'g' && (
   sel.length === 3 || sel[3] === '.' || sel[3] === '#')) {
-    addNS$1(data, children, sel);
+    addNS(data, children, sel);
   }
-  return vnode$1(sel, data, children, text, undefined);
+  return vnode(sel, data, children, text, undefined);
 }
 
-const FPS$1 = 60;
+const FPS = 60;
 
 
-function getTimePeriodData$1 (graph) {
+function getTimePeriodData (graph) {
     return graph.data.filter((dataPoint) => {
         // if data is outside of the time range skip it
         if (dataPoint.t < graph.timeRange.start)
@@ -1943,7 +766,7 @@ function getTimePeriodData$1 (graph) {
 }
 
 
-function getGraphMetrics$1 (model, graph) {
+function getGraphMetrics (model, graph) {
     let leftMargin = 10;
     const rightMargin = 10;
     let bottomMargin = graph.renderTicks ? 20 : 0;
@@ -1960,11 +783,11 @@ function getGraphMetrics$1 (model, graph) {
 }
 
 
-function verticalGridLinesMinor$1 (model, graph, update) {
+function verticalGridLinesMinor (model, graph, update) {
     if (!graph.gridLines || !graph.gridLines.vertical)
-        return index``
+        return jt``
 
-    const m = getGraphMetrics$1(model, graph);
+    const m = getGraphMetrics(model, graph);
 
     const gridLines = [ ];
     const pixelsPerTick = 6;
@@ -1972,19 +795,19 @@ function verticalGridLinesMinor$1 (model, graph, update) {
     for (let i=0; i < m.graphWidth; i += pixelsPerMinorLine) {
         const x = m.leftMargin + i;
         //gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
-        gridLines.push(h$1('line', { attrs: { x1: x, x2: x, y1: 0, y2: m.graphHeight } }));
+        gridLines.push(h('line', { attrs: { x1: x, x2: x, y1: 0, y2: m.graphHeight } }));
     }
 
     const strokeWidth = 1 / (window.devicePixelRatio || 1);
-    return index`<g class="grid-minor" style="stroke: ${graph.gridLines.vertical.minorColor}; stroke-width: ${strokeWidth}">${gridLines}</g>`
+    return jt`<g class="grid-minor" style="stroke: ${graph.gridLines.vertical.minorColor}; stroke-width: ${strokeWidth}">${gridLines}</g>`
 }
 
 
-function verticalGridLinesMajor$1 (model, graph, update) {
+function verticalGridLinesMajor (model, graph, update) {
     if (!graph.gridLines || !graph.gridLines.vertical)
-        return index``
+        return jt``
 
-    const m = getGraphMetrics$1(model, graph);
+    const m = getGraphMetrics(model, graph);
 
     const gridLines = [ ];
     const pixelsPerTick = 6;
@@ -1992,37 +815,37 @@ function verticalGridLinesMajor$1 (model, graph, update) {
     for (let i=0; i < m.graphWidth; i += pixelsPerMajorLine) {
         const x = m.leftMargin + i;
         //gridLines.push(html`<line x1="${x}" x2="${x}" y1="0" y2="${m.graphHeight}"/>`)
-        gridLines.push(h$1('line', { attrs: { x1: x, x2: x, y1: 0, y2: m.graphHeight } }));
+        gridLines.push(h('line', { attrs: { x1: x, x2: x, y1: 0, y2: m.graphHeight } }));
     }
 
     const strokeWidth = 1 / (window.devicePixelRatio || 1);
-    return index`<g class="grid-major" style="stroke: ${graph.gridLines.vertical.majorColor}; stroke-width: ${strokeWidth}">${gridLines}</g>`
+    return jt`<g class="grid-major" style="stroke: ${graph.gridLines.vertical.majorColor}; stroke-width: ${strokeWidth}">${gridLines}</g>`
 }
 
 
-function gridLines$1 (model, graph, update) {
+function gridLines (model, graph, update) {
     if (!graph.gridLines || !graph.gridLines.horizontal)
-        return index``
+        return jt``
 
-    const m = getGraphMetrics$1(model, graph);
+    const m = getGraphMetrics(model, graph);
 
     const gridLines = [ ];
     const distanceBetweenLines = m.graphHeight / (graph.gridLines.horizontal.lineCount + 1);
     for (let y=distanceBetweenLines; y < m.graphHeight; y += distanceBetweenLines) {
-        gridLines.push(index`<line x1="${m.leftMargin}" x2="${m.leftMargin + m.graphWidth}" y1="${y}" y2="${y}"/>`);
+        gridLines.push(jt`<line x1="${m.leftMargin}" x2="${m.leftMargin + m.graphWidth}" y1="${y}" y2="${y}"/>`);
     }
 
     const strokeWidth = 1 / (window.devicePixelRatio || 1);
 
-    return index`<g class="grid-horiz"
+    return jt`<g class="grid-horiz"
                    style="stroke: ${graph.gridLines.horizontal.color}; stroke-width: ${strokeWidth}"
                    stroke-dasharray="4 2">${gridLines}</g>`
 }
 
 
-function renderLinePlotGraph$1 (model, graph, dotWidth) {
-    const tp = getTimePeriodData$1(graph);
-    const m = getGraphMetrics$1(model, graph);
+function renderLinePlotGraph (model, graph, dotWidth) {
+    const tp = getTimePeriodData(graph);
+    const m = getGraphMetrics(model, graph);
 
     const lines = [ ];
     let lastX, lastY;
@@ -2039,7 +862,7 @@ function renderLinePlotGraph$1 (model, graph, dotWidth) {
         const y = (1 - (point.value / yLength)) * (m.graphHeight - dotWidth);
 
         if (i > 0) {
-            lines.push(h$1('line', { attrs: { x1: lastX, y1: lastY, x2: x, y2: y } }));
+            lines.push(h('line', { attrs: { x1: lastX, y1: lastY, x2: x, y2: y } }));
             pathString += `L ${x} ${y}`;
         } else {
             pathString = `M ${x} ${m.graphHeight}  L ${x} ${y}`;
@@ -2051,16 +874,16 @@ function renderLinePlotGraph$1 (model, graph, dotWidth) {
 
     if (graph.linePlotAreaColor && tp.length) {
         pathString += ` L ${lastX} ${m.graphHeight} Z`;
-        lines.unshift(h$1('path', { attrs: { d: pathString, fill: graph.linePlotAreaColor, stroke: 'transparent' } }));
+        lines.unshift(h('path', { attrs: { d: pathString, fill: graph.linePlotAreaColor, stroke: 'transparent' } }));
     }
 
     return lines
 }
 
 
-function renderScatterPlotGraph$1 (model, graph, dotWidth) {
-    const tp = getTimePeriodData$1(graph);
-    const m = getGraphMetrics$1(model, graph);
+function renderScatterPlotGraph (model, graph, dotWidth) {
+    const tp = getTimePeriodData(graph);
+    const m = getGraphMetrics(model, graph);
 
     return tp.map((point) => {
         const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, point.t);
@@ -2069,7 +892,7 @@ function renderScatterPlotGraph$1 (model, graph, dotWidth) {
         const yLength = graph.yRange.end - graph.yRange.start;
         const y = (1 - (point.value / yLength)) * (m.graphHeight - dotWidth);
 
-        return h$1('rect', {
+        return h('rect', {
             attrs: {
                 x,
                 y,
@@ -2082,10 +905,10 @@ function renderScatterPlotGraph$1 (model, graph, dotWidth) {
 }
 
 
-function graphComponent$1 (model, graph, update) {
+function graphComponent (model, graph, update) {
 
     const dotWidth = 4;
-    const m = getGraphMetrics$1(model, graph);
+    const m = getGraphMetrics(model, graph);
 
     const _stopDragging = function () {
         graph.selection.dragging = undefined;
@@ -2096,7 +919,7 @@ function graphComponent$1 (model, graph, update) {
         model.elm = vnode.elm;
     };
 
-    return index`
+    return jt`
         <svg xmlns="http://www.w3.org/2000/svg"
              class="graph"
              aria-labelledby="title"
@@ -2107,42 +930,42 @@ function graphComponent$1 (model, graph, update) {
              @hook:insert=${_insertHook}>
             <title id="title">${graph.title}</title>
 
-            ${verticalGridLinesMinor$1(model, graph)}
-            ${verticalGridLinesMajor$1(model, graph)}
-            ${gridLines$1(model, graph)}
+            ${verticalGridLinesMinor(model, graph)}
+            ${verticalGridLinesMajor(model, graph)}
+            ${gridLines(model, graph)}
 
             <g style="stroke: #888; stroke-dasharray: 0; stroke-width: 1;">
                 <line x1="${m.leftMargin}" x2="${m.leftMargin+m.graphWidth}" y1="${m.graphHeight}" y2="${m.graphHeight}" />
-                ${tickMarksComponent$1(model, graph)}
-                ${tickLabelsComponent$1(model, graph)}
+                ${tickMarksComponent(model, graph)}
+                ${tickLabelsComponent(model, graph)}
             </g>
 
             <g class="data"
                style="fill: ${graph.dataColor}; stroke: ${graph.dataColor}; stroke-width: 1;">
-               ${graph.type === 'scatterPlot' ? renderScatterPlotGraph$1(model, graph, dotWidth) : renderLinePlotGraph$1(model, graph, dotWidth)}
+               ${graph.type === 'scatterPlot' ? renderScatterPlotGraph(model, graph, dotWidth) : renderLinePlotGraph(model, graph, dotWidth)}
             </g>
 
-            ${timeSelectionComponent$1(model, graph, update)}
+            ${timeSelectionComponent(model, graph, update)}
 
             <text x="${m.graphWidth + m.leftMargin - dotWidth}" y="12" style="fill: rgba(0, 0, 0, 0.7); text-anchor: end; pointer-events: none;">${graph.label}</text>
-            ${renderLabelComponent$1(model, graph)}
+            ${renderLabelComponent(model, graph)}
         </svg>`
 }
 
 
-function renderLabelComponent$1 (model, graph, update) {
+function renderLabelComponent (model, graph, update) {
     if (graph.renderValueLabel && graph.selection.type === 'value') {
-        const m = getGraphMetrics$1(model, graph);
+        const m = getGraphMetrics(model, graph);
         const t = (graph.selection.time === Infinity ? graph.timeRange.end : graph.selection.time).toFixed(1);
-        return index`<text x="2" y="${m.graphHeight + m.bottomMargin - 8}" style="fill: rgba(0, 0, 0, 0.7); text-anchor: start; pointer-events: none;">t: ${t}s</text>`
+        return jt`<text x="2" y="${m.graphHeight + m.bottomMargin - 8}" style="fill: rgba(0, 0, 0, 0.7); text-anchor: start; pointer-events: none;">t: ${t}s</text>`
     }
 
-    return index``
+    return jt``
 }
 
 
-function tickMarksComponent$1 (model, graph, update) {
-    const m = getGraphMetrics$1(model, graph);
+function tickMarksComponent (model, graph, update) {
+    const m = getGraphMetrics(model, graph);
 
     const tickMarks = [ ];
 
@@ -2153,7 +976,7 @@ function tickMarksComponent$1 (model, graph, update) {
             const tickHeight = (i % 60 === 0) ? 8 : 4;
             const x = m.leftMargin + i;
             tickMarks.push(
-                h$1('line', { attrs: { x1: x, x2: x, y1: m.graphHeight, y2: m.graphHeight + tickHeight } })
+                h('line', { attrs: { x1: x, x2: x, y1: m.graphHeight, y2: m.graphHeight + tickHeight } })
             );
         }
     }
@@ -2162,8 +985,8 @@ function tickMarksComponent$1 (model, graph, update) {
 }
 
 
-function tickLabelsComponent$1 (model, graph, update) {
-    const m = getGraphMetrics$1(model, graph);
+function tickLabelsComponent (model, graph, update) {
+    const m = getGraphMetrics(model, graph);
 
     const timePeriod = (graph.timeRange.end - graph.timeRange.start);
 
@@ -2187,24 +1010,24 @@ function tickLabelsComponent$1 (model, graph, update) {
     }
 
     return tickLabels.map((tick) => {
-        return index`<text x="${tick.x}" y="${m.graphHeight + 19}">${tick.seconds}</text>`
+        return jt`<text x="${tick.x}" y="${m.graphHeight + 19}">${tick.seconds}</text>`
     })
 }
 
 
-function timeSelectionComponent$1 (model, graph, update) {
+function timeSelectionComponent (model, graph, update) {
     if (graph.selection.type === 'range')
-        return timeRangeSelectionComponent$1(model, graph, update)
+        return timeRangeSelectionComponent(model, graph, update)
 
     if (graph.selection.type === 'value')
-        return timeValueSelectionComponent$1(model, graph, update)
+        return timeValueSelectionComponent(model, graph, update)
 
-    return index``
+    return jt``
 }
 
 
-function timeRangeSelectionComponent$1 (model, graph, update) {
-    const m = getGraphMetrics$1(model, graph);
+function timeRangeSelectionComponent (model, graph, update) {
+    const m = getGraphMetrics(model, graph);
     const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, graph.selection.start);
     const endX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, graph.selection.end);
 
@@ -2230,7 +1053,7 @@ function timeRangeSelectionComponent$1 (model, graph, update) {
         }
 
         update();
-    }, 1000 / FPS$1);
+    }, 1000 / FPS);
 
     const _mouseUp = function () {
         graph.selection.dragging = undefined;
@@ -2247,7 +1070,7 @@ function timeRangeSelectionComponent$1 (model, graph, update) {
         update();
     };
 
-    return index`
+    return jt`
         <g class="time-selection">
 
             <rect x="${m.leftMargin}" y="0" width="${startX * m.graphWidth}" height="${m.graphHeight}"
@@ -2280,7 +1103,7 @@ function timeRangeSelectionComponent$1 (model, graph, update) {
 }
 
 
-function timeValueSelectionComponent$1 (model, graph, update) {
+function timeValueSelectionComponent (model, graph, update) {
 
     const _mouseMove = lodash_throttle(function (ev) {
         const rect = model.elm.getBoundingClientRect();
@@ -2305,14 +1128,14 @@ function timeValueSelectionComponent$1 (model, graph, update) {
         update();
     };
 
-    const m = getGraphMetrics$1(model, graph);
+    const m = getGraphMetrics(model, graph);
 
     const startX = findPosOnScale(graph.timeRange.start, graph.timeRange.end, graph.selection.time);
 
     const x = startX * m.graphWidth + m.leftMargin;
     const y = m.graphHeight;
 
-    return index`
+    return jt`
         <g class="time-selection" @on:mousedown=${_mouseDown}>
             <line x1="${x}"
                   x2="${x}"
@@ -2334,16 +1157,16 @@ function timelineComponent$1 (model, update) {
     if (model.container)
         model.width = model.container.elm ? model.container.elm.offsetWidth : model.container.offsetWidth;
 
-    return index`
+    return jt`
         <div class="graph-stack"
              @hook:insert=${_insertHook}
              style="width: 100%; display: grid; grid-template-columns: 1fr; border: ${model.border || 'none'};">
-            ${model.graphs.map((g) => graphComponent$1(model, g, update))}
+            ${model.graphs.map((g) => graphComponent(model, g, update))}
         </div>`
 }
 
-function timelineComponent$2 (model, update) {
-    return (model.renderer === 'canvas') ? timelineComponent(model, update) : timelineComponent$1(model, update)
+function timelineComponent (model, update) {
+    return (model.renderer === 'canvas') ? timelineComponent$2(model, update) : timelineComponent$1(model, update)
 }
 
-export default timelineComponent$2;
+export default timelineComponent;

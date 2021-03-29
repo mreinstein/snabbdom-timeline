@@ -1,6 +1,6 @@
 import clamp          from 'https://cdn.jsdelivr.net/gh/mreinstein/math-gap/src/clamp.js'
 import findPosOnScale from './find-position-on-scale.js'
-import html           from 'https://cdn.jsdelivr.net/npm/snabby@2/snabby.js'
+import html           from 'https://cdn.skypack.dev/snabby?min'
 import lerp           from 'https://cdn.jsdelivr.net/gh/mreinstein/math-gap/src/lerp.js'
 import throttle       from 'https://cdn.skypack.dev/lodash.throttle'
 import { h }          from 'https://cdn.jsdelivr.net/npm/snabbdom@2.1.0/build/package/h.js'; // helper function for creating vnodes
