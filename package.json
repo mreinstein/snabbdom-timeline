@@ -19,9 +19,6 @@
     "custom-element",
     "snabbdom"
   ],
-  "files": [
-    "CHANGELOG.md",
-  ],
   "author": "Michael Reinstein",
   "license": "MIT",
   "bugs": {
