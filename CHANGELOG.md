@@ -1,5 +1,9 @@
 # changelog
 
+## 0.9.1
+* bugfix: make deps listed as optional required, because they are
+
+
 ## 0.9.0
 * BREAKING: the component is now a `<snabbdom-timeline>` custom element instead of a `(model, update) => vnode` snabby function
   * graph configs/data are passed via the `graphs` property, and the renderer via the `renderer` attribute/property
