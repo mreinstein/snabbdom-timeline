@@ -24,6 +24,7 @@
 * svg renderer: remove duplicate `id="title"` attributes when rendering multiple graphs
 * don't render the text "undefined" when a graph has no `label`
 * `selection` is now truly optional on a graph
+* build steps are stupid, remove the build step!
 
 
 ## 0.8.0
