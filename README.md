@@ -177,7 +177,7 @@ so in that case I use the `canvas` renderer option which has better performance,
 
 ## development
 
-```
+```bash
 npm install
 npx serve . --no-etag
 open http://localhost:3000/example.html
