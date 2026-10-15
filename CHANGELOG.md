@@ -1,5 +1,12 @@
 # changelog
 
+## unreleased
+* BREAKING: add a `package.json` `exports` field. only the package root (`import 'snabbdom-timeline'`) is importable; deep imports like `snabbdom-timeline/src/render-svg.js` no longer resolve
+* reduce npm package size (1.3 MB -> ~12 kB) via the `package.json` `files` field: only `src/` is published (plus README, LICENSE, package.json)
+* convert README images from png to lossless webp (1.3 MB -> 240 kB)
+* document linked graphs in the README
+
+
 ## 0.9.1
 * bugfix: make deps listed as optional required, because they are
 

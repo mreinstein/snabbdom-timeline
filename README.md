@@ -2,7 +2,7 @@
 
 an interactive timeline web component (`<snabbdom-timeline>`), implemented with snabbdom
 
-![alt text](example.png "screenshot")
+![animated demo of a timeline graph with a draggable time range selection](example.webp "screenshot")
 
 
 ## features
@@ -146,16 +146,22 @@ There are 2 available graph types:
 
 ### scatterPlot
 
-![alt text](plot-scatter.png "scatter plot graph")
+![scatter plot graph](plot-scatter.webp "scatter plot graph")
 
 
 ### linePlot
 
-![alt text](plot-line.png "line plot graph")
+![line plot graph](plot-line.webp "line plot graph")
 
 
-You can also run the example (`npm run dev`, then open http://localhost:8000/example.html) to see a more
-complicated example with 2 graphs linked together.
+## linked graphs
+
+Graphs can be linked together. Here an "all time" graph's range selection drives the time range of a
+"selected time" graph below it:
+
+![two linked scatter plots: a range selection on the top graph sets the time range of the bottom graph](scr4.webp "linked graphs")
+
+You can run the example (see [development](#development)) to try this out.
 
 
 ## renderer option

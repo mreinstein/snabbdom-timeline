@@ -4,6 +4,10 @@
   "description": "an interactive timeline web component (<snabbdom-timeline>) implemented with snabbdom",
   "type": "module",
   "main": "./src/index.js",
+  "exports": "./src/index.js",
+  "files": [
+    "src"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
