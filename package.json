@@ -1,12 +1,10 @@
 {
   "name": "snabbdom-timeline",
-  "version": "0.8.0",
-  "description": "an interactive timeline component implemented in snabbdom",
+  "version": "0.9.0",
+  "description": "an interactive timeline web component (<snabbdom-timeline>) implemented with snabbdom",
   "type": "module",
-  "main": "index.js",
+  "main": "./src/index.js",
   "scripts": {
-    "build": "rollup -c rollup.config.js -o index.js timeline.js",
-    "prepublishOnly": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -14,24 +12,25 @@
     "url": "git+https://github.com/mreinstein/snabbdom-timeline.git"
   },
   "keywords": [
-    "snabbdom",
-    "timeline"
+    "timeline",
+    "ui",
+    "graph",
+    "web-component",
+    "custom-element",
+    "snabbdom"
   ],
   "files": [
     "CHANGELOG.md",
-    "find-position-on-scale.js",
-    "index.js",
-    "timeline.js"
   ],
-  "author": "Mike Reinstein",
+  "author": "Michael Reinstein",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/mreinstein/snabbdom-timeline/issues"
   },
   "homepage": "https://github.com/mreinstein/snabbdom-timeline#readme",
   "devDependencies": {
-    "rollup": "^2.46.0",
-    "rollup-plugin-url-resolve": "^0.2.0"
+    "@footgun/math-gap": "^0.2.0",
+    "snabbdom": "^3.6.4"
   },
   "engines": {
     "node": ">=12.17"

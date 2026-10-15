@@ -10,6 +10,9 @@
           padding: 10px;
         }
 
+        snabbdom-timeline {
+          border: 1px solid #adafaf;
+        }
     </style>
 </head>
 <body>
@@ -19,146 +22,140 @@ In this example, the top graph shows all data over time. The bottom graph shows 
 within the selected time range of the top graph.
 </p>
 
+<p>
+    <label>
+        renderer:
+        <select id="renderer">
+            <option value="svg">svg</option>
+            <option value="canvas">canvas</option>
+        </select>
+    </label>
+</p>
+
+<snabbdom-timeline renderer="svg"></snabbdom-timeline>
+        
+<script type="importmap">
+  {
+    "imports": {
+      "snabbdom": "https://esm.sh/snabbdom",
+      "@footgun/math-gap": "https://esm.sh/@footgun/math-gap"
+    }
+  }
+</script>
+
 <script type="module">
 
-import clamp     from 'https://cdn.jsdelivr.net/gh/mreinstein/math-gap/src/clamp.js'
-import html      from 'https://cdn.skypack.dev/snabby?min'
-import randomInt from 'https://cdn.jsdelivr.net/gh/mreinstein/random-gap/int.js'
-import timeline  from './timeline.js'
+import './src/index.js'
 
 
-// contains all data needed to render a timeline component
-const model = {
-    container: document.createElement('div'),
-    width: 0,
-    renderer: 'svg', // svg | canvas
-    border: '1px solid #adafaf',
-    graphs: [
-        {
-            title: 'test title',
-            label: 'all time',
-            type: 'linePlot',  // scatterPlot | linePlot
-            timeRange: {
-                start: 0,  // seconds
-                end: 0     // seconds
-            },
-            yRange: {
-                start: 0,
-                end: 100
-            },
-            selection: {
-                type: 'range',
-                start: 0,         // seconds | 0
-                end: Infinity,    // seconds | Infinity
-                dragging: false
-            },
-            height: 60,           // pixels
-            dataColor: 'dodgerblue',
-            linePlotAreaColor: 'rgba(41, 147, 251, 0.3)', // color to fill area if in linePlot mode
-            renderTicks: false,
-            renderValueLabel: false,
-/*
-            gridLines: {
-                vertical: {
-                    majorColor: '#dedede',
-                    minorColor: '#f3f3f3',
-                    ticksPerMinor: 2.5,
-                    ticksPerMajor: 10
-                },
-                horizontal: {
-                    color: '#eeeeee',
-                    lineCount: 2
-                }
-            },
-            */
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max)
+const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
 
-            data: [ ]
+
+// shows all data over time
+const overview = {
+    title: 'all data',
+    label: 'all time',
+    type: 'linePlot',  // scatterPlot | linePlot
+    timeRange: {
+        start: 0,  // seconds
+        end: 0     // seconds
+    },
+    yRange: {
+        start: 0,
+        end: 100
+    },
+    selection: {
+        type: 'range',
+        start: 0,         // seconds | 0
+        end: Infinity,    // seconds | Infinity
+        dragging: false
+    },
+    height: 60,           // pixels
+    dataColor: 'dodgerblue',
+    linePlotAreaColor: 'rgba(41, 147, 251, 0.3)', // color to fill area if in linePlot mode
+    renderTicks: false,
+    renderValueLabel: false,
+    data: [ ]
+}
+
+
+// shows the data within the overview's selected range
+const detail = {
+    title: 'selected data',
+    label: 'selected time',
+    type: 'scatterPlot',  // scatterPlot | linePlot
+    timeRange: {
+        start: 0,  // seconds
+        end: 0     // seconds
+    },
+    yRange: {
+        start: 0,
+        end: 100
+    },
+    selection: {
+        type: 'value',
+        time: Infinity,
+        dragging: false
+    },
+    height: 140,           // pixels
+    dataColor: 'dodgerblue',
+    renderTicks: true,
+    renderValueLabel: true,
+    gridLines: {
+        vertical: {
+            majorColor: '#dedede',
+            minorColor: '#f3f3f3',
+            ticksPerMinor: 2.5,
+            ticksPerMajor: 10
         },
-
-        {
-            title: 'test title',
-            label: 'selected time',
-            type: 'scatterPlot',  // scatterPlot | linePlot
-            timeRange: {
-                start: 0,  // seconds
-                end: 0     // seconds
-            },
-            yRange: {
-                start: 0,
-                end: 100
-            },
-            selection: {
-                type: 'value',
-                time: Infinity,
-                dragging: false
-            },
-            height: 140,           // pixels
-            dataColor: 'dodgerblue',
-            renderTicks: true,
-            renderValueLabel: true,
-
-            gridLines: {
-                vertical: {
-                    majorColor: '#dedede',
-                    minorColor: '#f3f3f3',
-                    ticksPerMinor: 2.5,
-                    ticksPerMajor: 10
-                },
-                horizontal: {
-                    color: '#eeeeee',
-                    lineCount: 2
-                }
-            },
-            data: [ ]
+        horizontal: {
+            color: '#eeeeee',
+            lineCount: 2
         }
-
-    ]
+    },
+    data: [ ]
 }
 
 
-document.body.appendChild(model.container)
+const timeline = document.querySelector('snabbdom-timeline')
+timeline.graphs = [ overview, detail ]
 
 
-function timelineComponent (model, update) {
-    // link the lower graph to show data within the selected range from the upper graph
-    model.graphs[1].timeRange.start =
-        (model.graphs[0].selection.start === 0) ? model.graphs[0].timeRange.start : model.graphs[0].selection.start
+// link the lower graph to show data within the selected range from the upper graph
+function link () {
+    detail.timeRange.start = (overview.selection.start === 0) ? overview.timeRange.start : overview.selection.start
+    detail.timeRange.end = (overview.selection.end === Infinity) ? overview.timeRange.end : overview.selection.end
 
-    model.graphs[1].timeRange.end =
-        (model.graphs[0].selection.end === Infinity) ? model.graphs[0].timeRange.end : model.graphs[0].selection.end
-
-    if (model.graphs[1].selection.time !== Infinity)
-        model.graphs[1].selection.time = clamp(model.graphs[1].selection.time,model.graphs[1].timeRange.start, model.graphs[1].timeRange.end)
-
-    return timeline(model, update)
+    if (detail.selection.time !== Infinity)
+        detail.selection.time = clamp(detail.selection.time, detail.timeRange.start, detail.timeRange.end)
 }
 
 
-function update () {
-    const oldVnode = model.container
-    const newVnode = timelineComponent(model, update)
-    model.container = html.update(oldVnode, newVnode)
-}
+// fires continuously while a selection control is dragged. the element
+// re-renders after the event, so changes made here show up immediately.
+timeline.addEventListener('input', link)
+
+
+document.querySelector('#renderer').addEventListener('change', (ev) => {
+    timeline.renderer = ev.target.value
+})
 
 
 // pump test data into the graphs every 2 seconds
 setInterval(function () {
-
     // generate the data point, insert it into both graphs
     const t = performance.now() / 1000
-    const value = randomInt(model.graphs[0].yRange.start, model.graphs[0].yRange.end)
+    const value = randomInt(overview.yRange.start, overview.yRange.end)
 
-    model.graphs[0].data.push({ t, value })
-    model.graphs[1].data.push({ t, value })
+    overview.data.push({ t, value })
+    detail.data.push({ t, value })
 
-    if (model.graphs[0].data.length > 0)
-        model.graphs[0].timeRange.end = model.graphs[0].data[model.graphs[0].data.length-1].t
+    overview.timeRange.end = t
 
-    update()
+    link()
+    timeline.update()
 }, 2000)
-
-
-update()
 
 </script>
 
