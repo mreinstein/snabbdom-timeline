@@ -10,7 +10,7 @@ an interactive timeline web component (`<snabbdom-timeline>`), implemented with 
 * single time or ranged time selectors, draggable with mouse, touch or pen
 * data oriented, functional design
 * a standard custom element: works in plain html or with any framework
-* tiny, with no runtime dependencies (~8kb gzipped, snabbdom included)
+* small, < 1,000 lines of code
 * renders with SVG or canvas
 
 
