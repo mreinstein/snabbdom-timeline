@@ -5,7 +5,7 @@ import {
     styleModule,
 } from "snabbdom";
 import { clamp, lerp } from "@footgun/math-gap";
-import { getGraphMetrics } from "./graph-utils.js";
+import { getColors, getGraphMetrics } from "./graph-utils.js";
 import renderCanvas from "./render-canvas.js";
 import renderSvg from "./render-svg.js";
 
@@ -159,12 +159,16 @@ export class SnabbdomTimeline extends HTMLElement {
         if (this.#vnode && this.#vnode.elm.parentNode !== this)
             this.#vnode = null;
 
-        const render = this.renderer === "canvas" ? renderCanvas : renderSvg;
+        const canvas = this.renderer === "canvas";
+        const render = canvas ? renderCanvas : renderSvg;
         const vnode = render({
             width: this.#width,
             pixelRatio: window.devicePixelRatio || 1,
             graphs: this.#graphs,
             startDrag: this.#startDrag,
+            // canvas can't use css var(), so resolve the themeable colors at render time.
+            // (svg references the custom properties directly.)
+            colors: canvas ? getColors(getComputedStyle(this)) : undefined,
         });
 
         if (this.#vnode) {

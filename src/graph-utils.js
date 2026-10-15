@@ -9,6 +9,20 @@ export const UNSELECTED_FILL = 'rgba(205,205,205,0.85)'
 export const LABEL_COLOR = 'rgba(0,0,0,0.7)'
 export const AXIS_COLOR = '#888'
 
+// css custom properties that override the label/axis colors (e.g. for dark mode)
+export const LABEL_COLOR_VAR = '--snabbdom-timeline-label-color'
+export const AXIS_COLOR_VAR = '--snabbdom-timeline-axis-color'
+
+
+// resolve the themeable colors for an element. the canvas renderer can't use css var()
+// directly, so read the computed custom properties, falling back to the defaults.
+export function getColors (style) {
+    return {
+        label: style.getPropertyValue(LABEL_COLOR_VAR).trim() || LABEL_COLOR,
+        axis: style.getPropertyValue(AXIS_COLOR_VAR).trim() || AXIS_COLOR,
+    }
+}
+
 
 // width (in css px) of a line that renders as 1 device pixel
 export function hairline (pixelRatio) {

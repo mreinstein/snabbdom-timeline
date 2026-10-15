@@ -3,8 +3,10 @@
 import { h } from 'snabbdom'
 import {
     AXIS_COLOR,
+    AXIS_COLOR_VAR,
     DOT_WIDTH,
     LABEL_COLOR,
+    LABEL_COLOR_VAR,
     SELECTION_COLOR,
     UNSELECTED_FILL,
     dataPointPosition,
@@ -63,7 +65,7 @@ function axis (graph, m) {
             children.push(h('text', { attrs: { x: label.x, y: m.graphHeight + 19 } }, label.seconds))
     }
 
-    return [ h('g', { style: { stroke: AXIS_COLOR, strokeDasharray: '0', strokeWidth: '1' } }, children) ]
+    return [ h('g', { style: { stroke: `var(${AXIS_COLOR_VAR}, ${AXIS_COLOR})`, strokeDasharray: '0', strokeWidth: '1' } }, children) ]
 }
 
 
@@ -164,7 +166,7 @@ function timeSelection (graph, m, startDrag) {
 
 function labels (graph, m) {
     const result = [ ]
-    const textStyle = { fill: LABEL_COLOR, pointerEvents: 'none' }
+    const textStyle = { fill: `var(${LABEL_COLOR_VAR}, ${LABEL_COLOR})`, pointerEvents: 'none' }
 
     if (graph.label != null)
         result.push(h('text', {

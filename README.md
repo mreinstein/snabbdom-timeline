@@ -175,6 +175,32 @@ rendering 50 of these graphs, with new data coming in at 60 frames per second, a
 so in that case I use the `canvas` renderer option which has better performance, at the cost of less semantically friendly markup.
 
 
+## styling / dark mode
+
+Style the element with regular css. The graph background comes from a zero-specificity rule, so it's easy to override.
+The label and axis colors are set with css custom properties:
+
+| property | default | used for |
+| --- | --- | --- |
+| `--snabbdom-timeline-label-color` | `rgba(0,0,0,0.7)` | value labels (top right of each graph) and the time label |
+| `--snabbdom-timeline-axis-color` | `#888` | the axis line, tick marks and tick labels |
+
+```css
+@media (prefers-color-scheme: dark) {
+    snabbdom-timeline {
+        --snabbdom-timeline-label-color: rgba(255, 255, 255, 0.75);
+        --snabbdom-timeline-axis-color: #777;
+    }
+    snabbdom-timeline .graph {
+        background-color: #1e1f22;
+    }
+}
+```
+
+The `svg` renderer picks up changes to these properties immediately. The `canvas` renderer reads them each time it
+renders, so if they change while the page is running (e.g. the user switches their OS theme), call `update()`.
+
+
 ## development
 
 ```bash

@@ -7,9 +7,7 @@
 // context is scaled to match, and lines/edges are snapped to whole device pixels.
 import { h } from 'snabbdom'
 import {
-    AXIS_COLOR,
     DOT_WIDTH,
-    LABEL_COLOR,
     SELECTION_COLOR,
     UNSELECTED_FILL,
     dataPointPosition,
@@ -108,12 +106,12 @@ function drawHorizontalGridLines (ctx, px, graph, m) {
 }
 
 
-function drawAxis (ctx, px, graph, m) {
+function drawAxis (ctx, px, graph, m, colors) {
     const axis = px.hline(1)
     const y = axis.at(m.graphHeight - 0.5)
 
     ctx.beginPath()
-    ctx.strokeStyle = AXIS_COLOR
+    ctx.strokeStyle = colors.axis
     ctx.lineWidth = axis.width
     ctx.moveTo(px.x(m.leftMargin), y)
     ctx.lineTo(px.x(m.leftMargin + m.graphWidth), y)
@@ -251,8 +249,8 @@ function drawValueSelection (ctx, px, graph, m) {
 }
 
 
-function drawLabels (ctx, graph, m) {
-    ctx.fillStyle = LABEL_COLOR
+function drawLabels (ctx, graph, m, colors) {
+    ctx.fillStyle = colors.label
 
     const valueLabel = getValueLabel(graph)
     if (valueLabel) {
@@ -267,7 +265,7 @@ function drawLabels (ctx, graph, m) {
 }
 
 
-function drawGraph (canvas, width, graph) {
+function drawGraph (canvas, width, graph, colors) {
     const ctx = canvas.getContext('2d')
 
     ctx.setTransform(1, 0, 0, 1, 0, 0)
@@ -286,7 +284,7 @@ function drawGraph (canvas, width, graph) {
     drawVerticalGridLines(ctx, px, graph, m, 'minor')
     drawVerticalGridLines(ctx, px, graph, m, 'major')
     drawHorizontalGridLines(ctx, px, graph, m)
-    drawAxis(ctx, px, graph, m)
+    drawAxis(ctx, px, graph, m, colors)
 
     if (graph.type === 'scatterPlot')
         drawScatterPlot(ctx, px, graph, m)
@@ -298,7 +296,7 @@ function drawGraph (canvas, width, graph) {
     else if (graph.selection?.type === 'value')
         drawValueSelection(ctx, px, graph, m)
 
-    drawLabels(ctx, graph, m)
+    drawLabels(ctx, graph, m, colors)
 }
 
 
@@ -329,8 +327,8 @@ function hitTest (ev, width, graph) {
 }
 
 
-function graphComponent (width, pixelRatio, graph, startDrag) {
-    const draw = (vnode) => drawGraph(vnode.elm, width, graph)
+function graphComponent (width, pixelRatio, graph, startDrag, colors) {
+    const draw = (vnode) => drawGraph(vnode.elm, width, graph, colors)
 
     return h('canvas.graph', {
         // drawing buffer in device pixels, displayed at the css size
@@ -354,6 +352,6 @@ function graphComponent (width, pixelRatio, graph, startDrag) {
 }
 
 
-export default function renderCanvas ({ width, pixelRatio, graphs, startDrag }) {
-    return h('div.graph-stack', graphs.map((graph) => graphComponent(width, pixelRatio, graph, startDrag)))
+export default function renderCanvas ({ width, pixelRatio, graphs, startDrag, colors }) {
+    return h('div.graph-stack', graphs.map((graph) => graphComponent(width, pixelRatio, graph, startDrag, colors)))
 }

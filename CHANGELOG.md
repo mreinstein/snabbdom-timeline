@@ -1,5 +1,10 @@
 # changelog
 
+## 0.11.0
+* feature: themeable label and axis colors via the `--snabbdom-timeline-label-color` and `--snabbdom-timeline-axis-color` css custom properties (e.g. for dark mode). defaults are unchanged
+  * the canvas renderer reads them on each render; call `update()` after changing them at runtime
+
+
 ## 0.10.0
 * BREAKING: add a `package.json` `exports` field. only the package root (`import 'snabbdom-timeline'`) is importable; deep imports like `snabbdom-timeline/src/render-svg.js` no longer resolve
 * reduce npm package size (1.3 MB -> ~12 kB) via the `package.json` `files` field: only `src/` is published (plus README, LICENSE, package.json)
